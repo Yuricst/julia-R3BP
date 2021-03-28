@@ -45,7 +45,7 @@ then define parameters for generating manifold
 num_branch = 100;
 stability = true;
 epsilon = 1e-5
-lstar = 384000.0
+lstar = 384400.
 relative_tol_manifold = 0.1
 absolute_tol_manifold_km = 100.0
 tf = -7.0
