@@ -57,4 +57,8 @@ outsim = R3BP.get_manifold(mu, X0, T, tf, num_branch, stability, epsilon, cb,
     "positive", lstar, relative_tol_manifold, absolute_tol_manifold_km, 1e-11, 1e-11, Tsit5())
 ```
 
+### Dev-notes
+- [ ] ER3BP propagator
+- [ ] BCR4BP propagator
+- [ ] BCR4BP
 
