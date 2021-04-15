@@ -1,8 +1,8 @@
-# manifold_sampling
+# Restricted Three Body Problem in Julia
 Sampling from manifold in CR3BP
 
 ### Dependencies
-Dependencies used in this repo are: `DifferentialEquations`, `LinearAlgebra`, `Distributed`, `Printf`, `Plots`, `DataFrames`, `CSV`, `CSVFiles`, `Statistics`. 
+Dependencies used in this repo are: `DifferentialEquations`, `LinearAlgebra`, `Distributed`, `Roots`, `Printf`, `Plots`, `DataFrames`, `CSV`, `CSVFiles`, `Statistics`. 
 
 
 ### Integration of PCR3BP / CR3BP states
