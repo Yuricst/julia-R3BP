@@ -7,7 +7,7 @@ using Roots
 using DifferentialEquations
 
 # basic functions for CR3BP
-include("lagrangePoint.jl")
+include("lagrangePoints.jl")
 include("jacobiConstant.jl")
 include("equationsOfMotion.jl")
 

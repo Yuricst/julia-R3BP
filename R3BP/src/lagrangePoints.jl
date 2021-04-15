@@ -4,7 +4,7 @@ Function for obtaining lagrange points
 
 #using Roots
 
-function lagrangePoint(mu::Float64)
+function lagrangePoints(mu::Float64)
     """Function computes lagrange points"""
 
     l = 1 - mu;
