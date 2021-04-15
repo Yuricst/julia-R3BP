@@ -4,8 +4,22 @@ Sampling from manifold in CR3BP
 ### Dependencies
 Dependencies used in this repo are: `DifferentialEquations`, `LinearAlgebra`, `Distributed`, `Roots`, `Printf`, `Plots`, `DataFrames`, `CSV`, `CSVFiles`, `Statistics`. 
 
+### Usage
+#### Lagrange points
+```julia
+julia> include("R3BP.jl")
+julia> mu = 0.01215058426994;
+julia> lp = lagrangePoints(mu)
 
-### Integration of PCR3BP / CR3BP states
+5×3 Array{Float64,2}:
+  0.836915   0.0       0.0
+  1.15568    0.0       0.0
+ -1.00506    0.0       0.0
+  0.487849   0.866025  0.0
+  0.487849  -0.866025  0.0
+```
+
+#### Integration of PCR3BP / CR3BP states
 For integrating a trajectory, use the DifferentialEquations module together with R3BP: 
 
 ```julia
@@ -27,7 +41,7 @@ sol = DifferentialEquations.solve(prob, Tsit5(), reltol=1e-11, abstol=1e-11)
 plot(sol, vars=(1,2,3))
 ```
 
-### Manifold
+#### Manifold
 A manifold of a LPO is usually propagated until a Poincare section, which is to be defined by a callback function:
 ```julia
 function condition(u,t,integrator)
@@ -60,5 +74,5 @@ outsim = R3BP.get_manifold(mu, X0, T, tf, num_branch, stability, epsilon, cb,
 ### Dev-notes
 - [ ] ER3BP propagator
 - [ ] BCR4BP propagator
-- [ ] BCR4BP
+
 
