@@ -293,8 +293,10 @@ function get_manifold(
 
     ensemble_prob = EnsembleProblem(prob_branch, prob_func=prob_func)
     if isnothing(callback)
+        #println("No callback function")
         sim = solve(ensemble_prob, method, EnsembleThreads(), trajectories=n, reltol=reltol, abstol=abstol)
     else
+        #println("Using callback function")
         sim = solve(ensemble_prob, method, EnsembleThreads(), trajectories=n, callback=callback, reltol=reltol, abstol=abstol)
     end
     return sim
