@@ -26,7 +26,7 @@ function halo_analytical_construct(
          mu
          lp: (1, 2, or 3)
          Az_km
-         northsouth: (1 or 3)
+         northsouth (int): (1 or 3)
          phi: 0.0 or pi
 
       Returns:
@@ -41,7 +41,7 @@ function halo_analytical_construct(
    """
 
    # function to define lagrange points
-   LP = lagrangePoint(mu)
+   LP = lagrangePoints(mu)
 
    # choose Lagrange point of interest
    if lp == 1

@@ -115,7 +115,7 @@ function scale_ϵ(mu, x0, period, stable, monodromy, y0, lstar::Float64, relativ
 end
 
 
-# manifold function
+## manifold function
 # function get_manifold(
 #             mu::Float64,
 #             x0::Array{Float64,2},

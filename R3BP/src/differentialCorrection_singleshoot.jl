@@ -72,7 +72,11 @@ end
 
 
 function ssdc_periodic_xzplane(mu, x0, period0; kwargs...)
-    """Single-shooting differential correction for periodic trajectory with symmetry across xz-plane"""
+    """Single-shooting differential correction for periodic trajectory with symmetry across xz-plane
+
+    Returns:
+        (struct): struct with fields: x0, period, sol, flag
+    """
 
     # ------- unpack kwargs ----- #
     if :maxiter in keys(kwargs)
@@ -156,17 +160,20 @@ function ssdc_periodic_xzplane(mu, x0, period0; kwargs...)
             xi = [ x0iter[1]  period/2 ]'
             df = [ [ stm[2,1] dstatef[2] ];
                    [ stm[3,1] dstatef[3] ] ];
+
         elseif fix=="z" && length(x0iter)==6
             #      / dx      / dvy     / d(P/2)
             xi = [ x0iter[1] x0iter[5] period/2 ]'
             df = [ [ stm[2,1] stm[2,5] dstatef[2] ];
                    [ stm[4,1] stm[4,5] dstatef[4] ];
                    [ stm[6,1] stm[6,5] dstatef[6] ] ];
+
         elseif fix=="period" && length(x0iter)==4
             #      dy / dx    dvx / dvy
             xi = [ x0iter[1]  x0iter[4] ]'
             df = [ [ stm[2,1] stm[2,4] ];
                    [ stm[3,1] stm[3,4] ] ];
+
         elseif fix=="period" && length(x0iter)==6
             #      / dx      / dz      / dvy
             xi = [ x0iter[1] x0iter[3] x0iter[5] ]'
@@ -181,12 +188,12 @@ function ssdc_periodic_xzplane(mu, x0, period0; kwargs...)
         if fix=="vy" && length(x0iter)==4
             #      x         P/2
             x0iter[1] = xii[1];
-            period    = xii[2];
+            period    = 2xii[2];
         elseif fix=="z" && length(x0iter)==6
             #      x         vy        P/2
             x0iter[1] = xii[1];
             x0iter[5] = xii[2];
-            period    = xii[3];
+            period    = 2xii[3];
         elseif fix=="period" && length(x0iter)==4
             #      x         vy
             x0iter[1] = xii[1];
