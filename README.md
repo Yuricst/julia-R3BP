@@ -67,8 +67,9 @@ tf = -7.0
 and finally the function wraps DifferentialEquations' `EnsembleProblem()`
 ```julia
 # generate manifolds
-outsim = R3BP.get_manifold(mu, X0, T, tf, num_branch, stability, epsilon, cb, 
-    "positive", lstar, relative_tol_manifold, absolute_tol_manifold_km, 1e-11, 1e-11, Tsit5())
+outsim = R3BP.get_manifold(mu, X0, T, tf, num_branch=num_branch, stability=stability, epsilon=epsilon, cb=cb, 
+    xdir="positive", lstar=lstar, relative_tol_manifold=relative_tol_manifold, 
+    absolute_tol_manifold_km=absolute_tol_manifold_km, reltol=1e-11, abstol=1e-11, method=Tsit5())
 ```
 
 ### Dev-notes
