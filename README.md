@@ -73,7 +73,7 @@ outsim = R3BP.get_manifold(mu, X0, T, tf, num_branch=num_branch, stability=stabi
 ```
 
 ### Dev-notes
-- [ ] ER3BP propagator
+- [x] ER3BP propagator
 - [ ] BCR4BP propagator
 
 
