@@ -62,20 +62,34 @@ end
 
 
 # -------------------------------------------------------------------------------------------- #
-# single=shooting differnetial correction
+# single-shooting differnetial correction
 struct Struct_out_ssdc
     x0
     period
     sol
     flag
+    fiters
 end
 
 
-function ssdc_periodic_xzplane(mu, x0, period0; kwargs...)
+function ssdc_periodic_xzplane(p, x0, period0; kwargs...)
     """Single-shooting differential correction for periodic trajectory with symmetry across xz-plane
 
+    Args:
+        p (tuple): parameters for DifferentialEquations
+        x0 (Array):
+        period0 (float):
+        kwargs:
+            maxiter
+            reltol
+            abstol
+            method
+            fix
+            tolDC
+            system (str): "cr3bp" or "er3bp"
+
     Returns:
-        (struct): struct with fields: x0, period, sol, flag
+        (struct): struct with fields: x0, period, sol, flag, fiters
     """
 
     # ------- unpack kwargs ----- #
@@ -88,13 +102,13 @@ function ssdc_periodic_xzplane(mu, x0, period0; kwargs...)
     if :reltol in keys(kwargs)
         reltol = kwargs[:reltol];
     else
-        reltol = 1e-12
+        reltol = 1e-13
     end
 
     if :abstol in keys(kwargs)
         abstol = kwargs[:abstol];
     else
-        abstol = 1e-12
+        abstol = 1e-13
     end
 
     if :method in keys(kwargs)
@@ -112,24 +126,51 @@ function ssdc_periodic_xzplane(mu, x0, period0; kwargs...)
     if :tolDC in keys(kwargs)
         tolDC = kwargs[:tolDC]
     else
-        tolDC = 1e-11
+        tolDC = 1e-12
     end
 
+    if :system in keys(kwargs)
+        system = kwargs[:system]
+    else
+        system = "cr3bp"
+    end
+
+    if :verbosity in keys(kwargs)
+        verbosity = kwargs[:verbosity]
+    else
+        verbosity = false
+    end
+
+    # initialize with array and period
     x0iter = deepcopy(x0)
     period = deepcopy(period0)
+
+    # unpack mu
+    mu = p[1]
 
     # ----- iterate until convergence ----- #
     idx = 1
     flag = 0
+    fiters = []
     while idx < maxiter+1
 
         # define ODE problem
         if length(x0iter)==4
-            x0_stm = hcat(x0iter, [1 0 0 0  0 1 0 0  0 0 1 0  0 0 0 1]);
-            prob = ODEProblem(R3BP.rhs_pcr3bp_svstm!, x0_stm, period/2, (mu));
+            x0_stm = vcat(x0iter, reshape(I(4), (16,)))[:]
+            #x0_stm = x0_stm = hcat(x0iter, [1 0 0 0  0 1 0 0  0 0 1 0  0 0 0 1]);
+            if cmp(system, "cr3bp")==0
+                prob = ODEProblem(R3BP.rhs_pcr3bp_svstm!, x0_stm, period/2, p);
+            else
+                error("Planar ER3BP not implemented!")
+            end
         elseif length(x0iter)==6
-            x0_stm = hcat(x0iter, [1 0 0 0 0 0  0 1 0 0 0 0  0 0 1 0 0 0  0 0 0 1 0 0  0 0 0 0 1 0  0 0 0 0 0 1]);
-            prob = ODEProblem(R3BP.rhs_cr3bp_svstm!, x0_stm, period/2, (mu));
+            x0_stm = vcat(x0iter, reshape(I(6), (36,)))[:]
+            #x0_stm = hcat(x0iter, [1 0 0 0 0 0  0 1 0 0 0 0  0 0 1 0 0 0  0 0 0 1 0 0  0 0 0 0 1 0  0 0 0 0 0 1]);
+            if cmp(system, "cr3bp")==0
+                prob = ODEProblem(R3BP.rhs_cr3bp_svstm!, x0_stm, period/2, p);
+            elseif cmp(system, "er3bp")==0
+                prob = ODEProblem(R3BP.rhs_er3bp_svstm!, x0_stm, period/2, p);
+            end
         else
             error("x0 should be length 4 or 6")
         end
@@ -138,11 +179,24 @@ function ssdc_periodic_xzplane(mu, x0, period0; kwargs...)
         # final state and STM
         statef = sol.u[end][1:length(x0iter)]
 
+        # get derivative of state
         if length(x0iter)==4
-            dstatef = pseudo_rhs_pcr3bp_sv(statef, (mu), 1.0)
+            dstatef = zeros(4)
+            if cmp(system, "cr3bp")==0
+                _ = R3BP.rhs_pcr3bp_sv!(dstatef, statef, p, sol.t[end])
+            else
+                error("Planar ER3BP not implemented!")
+            end
         elseif length(x0iter)==6
-            dstatef = pseudo_rhs_cr3bp_sv(statef, (mu), 1.0)
+            dstatef = zeros(6)
+            if cmp(system, "cr3bp")==0
+                _ = R3BP.rhs_cr3bp_sv!(dstatef, statef, p, sol.t[end])
+            else
+                _ = R3BP.rhs_er3bp_sv!(dstatef, statef, p, sol.t[end])
+            end
         end
+
+        # get state-transition matrix
         stm = reshape(sol.u[end][length(x0iter)+1:end], (length(x0iter),length(x0iter)))';
 
         # residual vector
@@ -183,6 +237,7 @@ function ssdc_periodic_xzplane(mu, x0, period0; kwargs...)
         end
         # correct state
         xii = xi - inv(df)*ferr
+        push!(fiters, norm(ferr))
 
         # update state
         if fix=="vy" && length(x0iter)==4
@@ -207,20 +262,31 @@ function ssdc_periodic_xzplane(mu, x0, period0; kwargs...)
 
         # check convergence
         if norm(ferr) < tolDC
-            println("Converged!")
+            @printf("Converged at iteration %i\n", idx)
             flag = 1
             break
         else
-            @printf("Current residual: %s\n", norm(ferr))
+            if verbosity==true
+                @printf("Iteration %i: residual: %s\n", idx, norm(ferr))
+            end
             idx += 1
         end
     end
 
     # return result
     if length(x0iter)==4
-        prob = ODEProblem(R3BP.rhs_pcr3bp_sv!, x0iter, period, (mu));
+        if cmp(system, "cr3bp")==0
+            prob = ODEProblem(R3BP.rhs_pcr3bp_sv!, x0iter, period, p);
+        else
+            error("P-ER3BP not implemented!")
+        end
     else
-        prob = ODEProblem(R3BP.rhs_cr3bp_sv!, x0iter, period, (mu));
+        if cmp(system, "cr3bp")==0
+            prob = ODEProblem(R3BP.rhs_cr3bp_sv!, x0iter, period, p);
+        elseif cmp(system, "er3bp")==0
+            prob = ODEProblem(R3BP.rhs_er3bp_sv!, x0iter, period, p);
+        end
     end
-    return Struct_out_ssdc(x0iter, period, solve(prob, method, reltol=reltol, abstol=abstol), flag);
+    return Struct_out_ssdc(x0iter, period, solve(prob, method, reltol=reltol, abstol=abstol), flag, fiters);
+    #return Struct_out_ssdc(x0iter, period, solve(prob, method, reltol=reltol, abstol=abstol), flag);
 end

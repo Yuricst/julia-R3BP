@@ -182,7 +182,8 @@ function halo_analytical_construct(
    zdot_analytic_synodic = gammaL * zdot_analytic_Lframe;
 
    # prepare state-vector at t=0 as initial guess for differential corrector
-   X0 = [x_analytic_synodic[1] y_analytic_synodic[1] z_analytic_synodic[1] xdot_analytic_synodic[1] ydot_analytic_synodic[1] zdot_analytic_synodic[1]]
+   X0 = [x_analytic_synodic[1], y_analytic_synodic[1], z_analytic_synodic[1],
+         xdot_analytic_synodic[1], ydot_analytic_synodic[1], zdot_analytic_synodic[1]]
 
    # prepare function output
    return Struct_out_halo_analytical(X0, T)

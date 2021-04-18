@@ -209,3 +209,132 @@ function rhs_pcr3bp_svstm!(du,u,p,t)
     du[19] = a41*u[7] + a42*u[11] + a43*u[15] + a44*u[19];
     du[20] = a41*u[8] + a42*u[12] + a43*u[16] + a44*u[20];
 end
+
+
+# -------------------------------------------------------------------------------- #
+# Equations of motion for ER3BP
+function rhs_er3bp_sv!(du,u,p,t)
+    """ER3BP equation of motion
+    Parameters p should hold p=(mu, ecc, t0)
+    """
+   # ER3BP equation of motion
+   # unpack arguments
+   mu = p[1]
+   e  = p[2]
+   t0 = p[3]
+   # decompose state
+   x = u[1];
+   y = u[2];
+   z = u[3];
+   vx = u[4];
+   vy = u[5];
+   vz = u[6];
+
+   # calculate radii
+   r1 = sqrt( (x+mu)^2 + y^2 + z^2 );
+   r2 = sqrt( (x-1+mu)^2 + y^2 + z^2 );
+   # --- STATE DERIVATIVE --- #
+   # position-state derivative
+   du[1] = vx;
+   du[2] = vy;
+   du[3] = vz;
+
+   # CR3BP pseudo-potential
+   Omega_x = x - ((1-mu)/r1^3)*(mu+x) + (mu/r2^3)*(1-mu-x);
+   Omega_y = y - ((1-mu)/r1^3)*y - (mu/r2^3)*y;
+   Omega_z = -((1-mu)/r1^3)*z - (mu/r2^3)*z;
+
+   # ER3BP term
+   ecc_factor = e*cos(t-t0) / ( 1 + e*cos(e) );
+
+   # velocity-state derivative
+   du[4] =  2*vy + Omega_x - ecc_factor*Omega_x;
+   du[5] = -2*vx + Omega_y - ecc_factor*Omega_y;
+   du[6] =         Omega_z - ecc_factor*(Omega_z + z);
+end
+
+
+function rhs_er3bp_svstm!(du,u,p,t)
+    """ER3BP equation of motion with STM
+    Parameters p should hold p=(mu, ecc, t0)
+    """
+    #function du = rhs_er3bp_stm(t, X, mu, e)
+    # ER3BP equation of motion
+    # unpack arguments
+    mu = p[1]
+    e  = p[2]
+    t0 = p[3]
+    # decompose state
+    x = u[1];
+    y = u[2];
+    z = u[3];
+    vx = u[4];
+    vy = u[5];
+    vz = u[6];
+    # decompose stm
+    stm = reshape(u[7:end], (6,6))';   # note Julia is column-major
+    # for row = 1:6
+    #     for col = 1:6
+    #         stm(row,col) = u[6+col+(row-1)*6];
+    #     end
+    # end
+    # calculate radii
+    r1 = sqrt( (x+mu)^2 + y^2 + z^2 );
+    r2 = sqrt( (x-1+mu)^2 + y^2 + z^2 );
+    # --- STATE DERIVATIVE --- #
+    # position-state derivative
+    du[1] = vx;
+    du[2] = vy;
+    du[3] = vz;
+
+    # CR3BP pseudo-potential
+    Omega_x = x - ((1-mu)/r1^3)*(mu+x) + (mu/r2^3)*(1-mu-x);
+    Omega_y = y - ((1-mu)/r1^3)*y - (mu/r2^3)*y;
+    Omega_z = -((1-mu)/r1^3)*z - (mu/r2^3)*z;
+
+    # ER3BP term
+    ecc_factor = e*cos(t-t0) / ( 1 + e*cos(e) );
+
+    # velocity-state derivative
+    du[4] =  2*vy + Omega_x - ecc_factor*Omega_x;
+    du[5] = -2*vx + Omega_y - ecc_factor*Omega_y;
+    du[6] =         Omega_z - ecc_factor*(Omega_z + z);
+
+    # --- A-MATRIX --- #
+    # initialize A-matrix
+    A11 = zeros(3,3);
+    A12 = I(3);
+    A22 = 2*[0  1 0;
+             -1 0 0;
+             0  0 0];
+    # construct U matrix in CR3BP
+    Uxx_C = 1 - (1-mu)/r1^3 - mu/r2^3 + 3*((x+mu)^2 *(1-mu)/r1^5 + (x+mu-1)^2*mu/r2^5);
+    Uyy_C = 1 - (1-mu)/r1^3 - mu/r2^3 + 3*y^2*((1-mu)/r1^5 + mu/r2^5);
+    Uzz_C = -(1-mu)/r1^3 - mu/r2^3 + 3*z^2*((1-mu)/r1^5 + mu/r2^5);
+    Uxy_C = 3*y*((x+mu)*(1-mu)/r1^5 + (x+mu-1)*mu/r2^5);
+    Uxz_C = 3*z*((x+mu)*(1-mu)/r1^5 + (x+mu-1)*mu/r2^5);
+    Uyz_C = 3*y*z*((1-mu)/r1^5 + mu/r2^5);
+    # convert to U matrix in ER3BP
+    Uxx = Uxx_C - ecc_factor * (Uxx_C);
+    Uyy = Uyy_C - ecc_factor * (Uyy_C);
+    Uzz = Uzz_C - ecc_factor * (Uzz_C + 2);
+    Uxy = Uxy_C - ecc_factor * (Uxy_C);
+    Uxz = Uxz_C - ecc_factor * (Uxz_C + z);
+    Uyz = Uyz_C - ecc_factor * (Uyz_C + z);
+
+    Uderiv = [Uxx Uxy Uxz;
+              Uxy Uyy Uyz;
+              Uxz Uyz Uzz];
+    # update A-matrix
+    A = [A11    A12;
+         Uderiv A22];
+    # differential relation
+    stmdot = A * stm;
+    # store elements of A in du(7,1) ~ onwards
+    du[7:end] = reshape(stmdot', (36,))
+    # for row = 1:6
+    #     for col = 1:6
+    #         du[6+col+(row-1)*6] = stmdot(row,col);
+    #     end
+    # end
+end
