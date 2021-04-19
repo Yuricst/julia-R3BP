@@ -5,6 +5,8 @@ module R3BP
 
 using Roots
 using DifferentialEquations
+using ForwardDiff
+using Printf
 
 # basic functions for CR3BP
 include("lagrangePoints.jl")

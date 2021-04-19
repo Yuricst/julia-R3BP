@@ -36,14 +36,15 @@ function pseudo_rhs_cr3bp_sv(u,p,t)
 end
 
 
+"""
+Right-hand side expression for state-vector in CR3BP
+Input:
+    du : cache array of derivative of state-vector
+    u : state-vector
+    p : parameters, where p[1] = mu
+    t : time
+"""
 function pseudo_rhs_pcr3bp_sv(u,p,t)
-    """Right-hand side expression for state-vector in CR3BP
-    Input:
-        du : cache array of derivative of state-vector
-        u : state-vector
-        p : parameters, where p[1] = mu
-        t : time
-    """
     du = zeros(4)
     # unpack state
     x, y = u[1], u[2]
@@ -72,29 +73,29 @@ struct Struct_out_ssdc
 end
 
 
+"""
+Single-shooting differential correction for periodic trajectory with symmetry across xz-plane
+
+Args:
+    p (tuple): parameters for DifferentialEquations
+    x0 (Array):
+    period0 (float):
+    kwargs:
+        maxiter
+        reltol
+        abstol
+        method
+        fix
+        tolDC
+        system (str): "cr3bp" or "er3bp"
+
+Returns:
+    (struct): struct with fields: x0, period, sol, flag, fiters
+"""
 function ssdc_periodic_xzplane(p, x0, period0; kwargs...)
-    """Single-shooting differential correction for periodic trajectory with symmetry across xz-plane
-
-    Args:
-        p (tuple): parameters for DifferentialEquations
-        x0 (Array):
-        period0 (float):
-        kwargs:
-            maxiter
-            reltol
-            abstol
-            method
-            fix
-            tolDC
-            system (str): "cr3bp" or "er3bp"
-
-    Returns:
-        (struct): struct with fields: x0, period, sol, flag, fiters
-    """
-
     # ------- unpack kwargs ----- #
     if :maxiter in keys(kwargs)
-        maxiter = kwargs[:n];
+        maxiter = kwargs[:maxiter];
     else
         maxiter = 15
     end
@@ -141,12 +142,27 @@ function ssdc_periodic_xzplane(p, x0, period0; kwargs...)
         verbosity = false
     end
 
+    if :stm_option in keys(kwargs)
+        stm_option = kwargs[:stm_option]
+    else
+        stm_option = "analytical"
+    end
+
+    # unpack mu
+    mu = p[1]
+
     # initialize with array and period
     x0iter = deepcopy(x0)
     period = deepcopy(period0)
 
-    # unpack mu
-    mu = p[1]
+    # if stm_option is AD, create a base problem for later
+    #if cmp(stm_option, "ad")==0
+        if cmp(system, "cr3bp")==0
+            prob_base = ODEProblem(R3BP.rhs_cr3bp_sv!, x0iter, period/2, p);
+        elseif cmp(system, "er3bp")==0
+            prob_base = ODEProblem(R3BP.rhs_er3bp_sv!, x0iter, period/2, p);
+        end
+    #end
 
     # ----- iterate until convergence ----- #
     idx = 1
@@ -197,7 +213,19 @@ function ssdc_periodic_xzplane(p, x0, period0; kwargs...)
         end
 
         # get state-transition matrix
-        stm = reshape(sol.u[end][length(x0iter)+1:end], (length(x0iter),length(x0iter)))';
+        if cmp(stm_option, "analytical")==0
+            # STM using analytical expression
+            stm = reshape(sol.u[end][length(x0iter)+1:end], (length(x0iter),length(x0iter)))';
+        else
+            # STM using AD
+            stm = ForwardDiff.jacobian(x0iter -> get_statef(prob_base, x0iter, period/2, p), x0iter)
+        end
+        #println("STM diff")
+        #print_stm(reshape(sol.u[end][length(x0iter)+1:end], (length(x0iter),length(x0iter)))' - ForwardDiff.jacobian(x0iter -> get_statef(prob_base, x0iter, period/2, p), x0iter))
+        #println(reshape(sol.u[end][length(x0iter)+1:end], (length(x0iter),length(x0iter)))' - ForwardDiff.jacobian(x0iter -> get_statef(prob_base, x0iter, period/2, p), x0iter))
+
+        # println("STM from AD")
+        # println(ForwardDiff.jacobian(x0iter -> get_statef(prob_base, x0iter, period/2, p), x0iter))
 
         # residual vector
         if length(x0iter)==4
@@ -289,4 +317,27 @@ function ssdc_periodic_xzplane(p, x0, period0; kwargs...)
     end
     return Struct_out_ssdc(x0iter, period, solve(prob, method, reltol=reltol, abstol=abstol), flag, fiters);
     #return Struct_out_ssdc(x0iter, period, solve(prob, method, reltol=reltol, abstol=abstol), flag);
+end
+
+
+"""
+Function to remake ODE problem and get final state
+"""
+function get_statef(prob, x0, tf, p)
+    _prob = remake(prob, u0=x0, p=p)
+    sol = solve(_prob, Tsit5(), saveat=tf)
+    sol.u[end]
+end
+
+
+function print_stm(stm)
+    nrow, ncol = size(stm)
+    for i = 1:nrow
+        for j = 1:ncol
+            @printf("% 1.6e   ", stm[i,j])
+            if j == ncol
+                print("\n")
+            end
+        end
+    end
 end

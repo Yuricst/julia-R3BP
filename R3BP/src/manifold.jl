@@ -89,7 +89,7 @@ function scale_ϵ(mu, x0, period, stable, monodromy, y0, lstar::Float64, relativ
         predictedError = ϵ_try * efPosition
 
         # compute error by propagating one period
-        x0_manifold = x0 + ϵ_try*reshape(y0, (1,length(x0)))
+        x0_manifold = x0 + ϵ_try*y0#reshape(y0, (1,length(x0)))
 
         if stable==true   # stable case
             #prop_manif_out = propagate_cr3bp(mu, x0_manifold, -period)
@@ -134,7 +134,7 @@ end
 #             method=Tsit5())
 function get_manifold(
             mu::Float64,
-            x0::Array{Float64,2},
+            x0::Array,  # ::Array{Float64,2},
             period::Float64,
             tf::Float64;
             kwargs...)
@@ -223,10 +223,12 @@ function get_manifold(
 
     # ---------- propagate c0 by one full period with STM ---------- #
     if length(x0)==4
-        x0_stm = hcat(x0, [1 0 0 0  0 1 0 0  0 0 1 0  0 0 0 1]);
+        #x0_stm = vcat(x0, [1 0 0 0  0 1 0 0  0 0 1 0  0 0 0 1]);
+        x0_stm = vcat(x0iter, reshape(I(4), (16,)))[:]
         prob_lpo = ODEProblem(rhs_pcr3bp_svstm!, x0_stm, period, (mu));
     elseif length(x0)==6
-        x0_stm = hcat(x0, [1 0 0 0 0 0  0 1 0 0 0 0  0 0 1 0 0 0  0 0 0 1 0 0  0 0 0 0 1 0  0 0 0 0 0 1]);
+        #x0_stm = vcat(x0, [1 0 0 0 0 0  0 1 0 0 0 0  0 0 1 0 0 0  0 0 0 1 0 0  0 0 0 0 1 0  0 0 0 0 0 1]);
+        x0_stm = vcat(x0, reshape(I(6), (36,)))[:]
         prob_lpo = ODEProblem(rhs_cr3bp_svstm!, x0_stm, period, (mu));
     else
         error("x0 should be length 4 or 6")
