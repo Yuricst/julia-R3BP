@@ -116,51 +116,37 @@ end
 
 
 ## manifold function
-# function get_manifold(
-#             mu::Float64,
-#             x0::Array{Float64,2},
-#             period::Float64,
-#             tf::Float64,
-#             n::Int=100,
-#             stable=true,
-#             ϵ::Float64=nothing,
-#             callback=nothing,
-#             xdir::String="positive",
-#             lstar::Float64=384000.0,
-#             relative_tol_manifold::Float64=0.1,
-#             absolute_tol_manifold_km::Float64=100.0,
-#             reltol=1e-11,
-#             abstol=1e-11,
-#             method=Tsit5())
+"""
+    get_manifold(
+           mu::Float64,
+           x0::Array,  # ::Array{Float64,2},
+           period::Float64,
+           tf::Float64,
+           stable::Boolean;
+           kwargs...)
+
+Function to obtain manifold of LPO
+
+# Optional arugments:
+    - ϵ
+    - xdir (default: "positive")
+    - n
+    - callback
+    - lstar
+    - relative_tol_manifold
+    - absolute_tol_manifold_km
+    - reltol
+    - abstol
+    - method
+    """
 function get_manifold(
             mu::Float64,
-            x0::Array,  # ::Array{Float64,2},
+            x0::Array,
             period::Float64,
-            tf::Float64;
+            tf::Float64,
+            stable::Bool;
             kwargs...)
-    """Function to obtain manifold of LPO
-
-    kwrgs:
-        stable (default: true)
-        xdir (default: "positive")
-        n
-        callback
-        lstar
-        relative_tol_manifold
-        absolute_tol_manifold_km
-        reltol
-        abstol
-        method
-        ϵ
-        """
     # ---------- extract arguments ---------- #
-
-    if :stable in keys(kwargs)
-        stable = kwargs[:stable];
-    else
-        stable = true
-    end
-
     if :xdir in keys(kwargs)
         xdir = kwargs[:xdir];
     else
@@ -170,7 +156,7 @@ function get_manifold(
     if :n in keys(kwargs)
         n = kwargs[:n];
     else
-        n = 100
+        n = 50
     end
 
     if :callback in keys(kwargs)
@@ -182,7 +168,7 @@ function get_manifold(
     if :lstar in keys(kwargs)
         lstar = kwargs[:lstar];
     else
-        lstar=384402.0;
+        lstar=384400.0;
     end
 
     if :relative_tol_manifold in keys(kwargs)
@@ -215,11 +201,19 @@ function get_manifold(
         method=Tsit5();
     end
 
-    println("========== Manifold Setting ==========")
-    print("xdir: ")
-    println(xdir)
-    print("Stable: ")
-    println(stable)
+    if :verbosity in keys(kwargs)
+        verbosity = kwargs[:verbosity]
+    else
+        verbosity = 0
+    end
+
+    if verbosity > 0
+        println("========== Manifold Setting ==========")
+        print("xdir: ")
+        println(xdir)
+        print("Stable: ")
+        println(stable)
+    end
 
     # ---------- propagate c0 by one full period with STM ---------- #
     if length(x0)==4

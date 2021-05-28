@@ -1,31 +1,40 @@
 # Restricted Three Body Problem in Julia
-Sampling from manifold in CR3BP
+
+Library implements methods for working with the restricted three body problem (R3BP). 
+User is expected to be familiar with `DifferentialEquations`, which `R3BP` utilizes for most primary functions. 
+
 
 ### Dependencies
-Dependencies used in this repo are: `DifferentialEquations`, `LinearAlgebra`, `Distributed`, `Roots`, `Printf`, `Plots`, `DataFrames`, `CSV`, `CSVFiles`, `Statistics`. 
+Dependencies used in this repo are: `DifferentialEquations`, `LinearAlgebra`, `Distributed`, `Roots`, `Printf`, `Plots`, `DataFrames`, `CSV`, `CSVFiles`, `Statistics`.
 
 ### Usage
-#### Lagrange points
+#### CR3BP parameters and Lagrange points
 ```julia
-julia> include("R3BP.jl")
-julia> mu = 0.01215058426994;
-julia> lp = lagrangePoints(mu)
+include("R3BP.jl")
+params = R3BP.get_cr3bp_param(399, 301)
+mu = params.mu
+println("mu: $mu")
+lp = R3BP.lagrangePoints(mu)
 
+```
+
+returns the following:
+
+```
 5×3 Array{Float64,2}:
-  0.836915   0.0       0.0
-  1.15568    0.0       0.0
- -1.00506    0.0       0.0
-  0.487849   0.866025  0.0
-  0.487849  -0.866025  0.0
+  0.836915   0.0       0.0   # L1 x,y,z
+  1.15568    0.0       0.0   # L2 x,y,z
+ -1.00506    0.0       0.0   # L3 x,y,z
+  0.487849   0.866025  0.0   # L4 x,y,z
+  0.487849  -0.866025  0.0   # L5 x,y,z
 ```
 
 #### Integration of PCR3BP / CR3BP states
-For integrating a trajectory, use the DifferentialEquations module together with R3BP: 
+For integrating a trajectory, use the DifferentialEquations module together with R3BP:
 
 ```julia
 using DifferentialEquations
 using Plots
-include("R3BP.jl")
 
 # define parameters
 mu = 0.01215058426994;
@@ -35,7 +44,7 @@ T = 3.385326412831325;
 tspan = (0.0, T)
 p = (mu)
 prob = ODEProblem(R3BP.rhs_cr3bp_sv!, X0, tspan, p)
-sol = DifferentialEquations.solve(prob, Tsit5(), reltol=1e-11, abstol=1e-11)
+sol = solve(prob, Tsit5(), reltol=1e-11, abstol=1e-11)
 
 # plot using the sol object
 plot(sol, vars=(1,2,3))
@@ -65,15 +74,16 @@ absolute_tol_manifold_km = 100.0
 tf = -7.0
 ```
 and finally the function wraps DifferentialEquations' `EnsembleProblem()`
+
 ```julia
 # generate manifolds
-outsim = R3BP.get_manifold(mu, X0, T, tf, num_branch=num_branch, stability=stability, epsilon=epsilon, callback=cb, 
-    xdir="positive", lstar=lstar, relative_tol_manifold=relative_tol_manifold, 
-    absolute_tol_manifold_km=absolute_tol_manifold_km, reltol=1e-11, abstol=1e-11, method=Tsit5())
+outsim = R3BP.get_manifold(mu, X0, T, tf, stability;
+    n=num_branch, ϵ=epsilon, callback=nothing, xdir="positive");
+
+# plot manifolds
+plot(outsim, linealpha=0.4, vars=(1,2), flip=false, aspect_ratio=:equal)
 ```
 
 ### Dev-notes
 - [x] ER3BP propagator
 - [ ] BCR4BP propagator
-
-

@@ -10,21 +10,46 @@ struct CR3BP_param
     m2_soi
 end
 
-function get_cr3bp_param(m1_naifID, m2_naifID)
-    """Function returns CR3BP parameters mu, Lstar, Tstar, soi of m2
 
-    Args:
-        m1_naifID (str): mass of first primary
-        m2_naifID (str): mass of second primary
+"""
+    get_cr3bp_param(m1_naifID::Int, m2_naifID::Int)
 
-    Returns:
-        (obj): object with fields:
-            mu (float): mass-parameter
-            lstar (float): non-dimensional distance
-            tstar (float): non-dimensional time
-            m2_soi (float): sphere of influence of second mass, in km
-    """
+Obtain CR3BP parameters mu, Lstar, Tstar, soi of m2
 
+Args:
+    m1_naifID (Int): mass of first primary
+    m2_naifID (Int): mass of second primary
+
+Returns:
+    (obj): object with fields:
+        mu (float): mass-parameter
+        lstar (float): non-dimensional distance
+        tstar (float): non-dimensional time
+        m2_soi (float): sphere of influence of second mass, in km
+"""
+function get_cr3bp_param(m1_naifID::Int, m2_naifID::Int)
+    return get_cr3bp_param(string(m1_naifID), string(m2_naifID))
+end
+
+
+
+"""
+    get_cr3bp_param(m1_naifID::String, m2_naifID::String)
+
+Obtain CR3BP parameters mu, Lstar, Tstar, soi of m2
+
+Args:
+    m1_naifID (str): mass of first primary
+    m2_naifID (str): mass of second primary
+
+Returns:
+    (obj): object with fields:
+        mu (float): mass-parameter
+        lstar (float): non-dimensional distance
+        tstar (float): non-dimensional time
+        m2_soi (float): sphere of influence of second mass, in km
+"""
+function get_cr3bp_param(m1_naifID::String, m2_naifID::String)
     # list of semi-major axis
     if m1_naifID =="10"
         a2 = get_semiMajorAxes(m2_naifID)[1]
