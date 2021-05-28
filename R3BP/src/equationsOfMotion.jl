@@ -10,14 +10,18 @@ using Printf
 
 # -------------------------------------------------------------------------------- #
 # Equations of motion for CR3BP
+"""
+    rhs_cr3bp_sv!(du,u,p,t)
+
+Right-hand side expression for state-vector in CR3BP
+
+# Arguments
+    - `du`: cache array of duative of state-vector
+    - `u`: state-vector
+    - `p`: parameters, where p[1] = μ
+    - `t`: time
+"""
 function rhs_cr3bp_sv!(du,u,p,t)
-    """Right-hand side expression for state-vector in CR3BP
-    Input:
-        du : cache array of derivative of state-vector
-        u : state-vector
-        p : parameters, where p[1] = mu
-        t : time
-    """
     # unpack state
     x, y, z = u[1], u[2], u[3]
     vx, vy, vz = u[4], u[5], u[6]
@@ -35,14 +39,18 @@ function rhs_cr3bp_sv!(du,u,p,t)
 end
 
 
+"""
+    rhs_cr3bp_svstm!(du,u,p,t)
+
+Right-hand side expression for state-vector and STM in CR3BP
+
+# Arguments
+    - `du`: cache array of duative of state-vector
+    - `u`: state-vector
+    - `p`: parameters, where p[1] = μ
+    - `t`: time
+"""
 function rhs_cr3bp_svstm!(du,u,p,t)
-    """Right-hand side expression for state-vector and STM in CR3BP
-    Input:
-        du : cache array of duative of state-vector
-        u : state-vector
-        p : parameters, where p[1] = p[1]
-        t : time
-    """
     # unpack state
     x, y, z = u[1], u[2], u[3]
     vx, vy, vz = u[4], u[5], u[6]
@@ -136,14 +144,18 @@ end
 
 # -------------------------------------------------------------------------------- #
 # Equations of motion for PCR3BP
+"""
+    rhs_pcr3bp_sv!(du,u,p,t)
+
+Right-hand side expression for state-vector in CR3BP
+
+# Arguments
+    - `du`: cache array of duative of state-vector
+    - `u`: state-vector
+    - `p`: parameters, where p[1] = μ
+    - `t`: time
+"""
 function rhs_pcr3bp_sv!(du,u,p,t)
-    """Right-hand side expression for state-vector in CR3BP
-    Input:
-        du : cache array of derivative of state-vector
-        u : state-vector
-        p : parameters, where p[1] = mu
-        t : time
-    """
     # unpack state
     x, y = u[1], u[2]
     vx, vy = u[3], u[4]
@@ -159,14 +171,19 @@ function rhs_pcr3bp_sv!(du,u,p,t)
 end
 
 
+
+"""
+    rhs_pcr3bp_svstm!(du,u,p,t)
+
+Right-hand side expression for state-vector and STM in CR3BP
+
+# Arguments
+    - `du`: cache array of duative of state-vector
+    - `u`: state-vector
+    - `p`: parameters, where p[1] = μ
+    - `t`: time
+"""
 function rhs_pcr3bp_svstm!(du,u,p,t)
-    """Right-hand side expression for state-vector and STM in CR3BP
-    Input:
-        du : cache array of derivative of state-vector
-        u : state-vector
-        p : parameters, where p[1] = mu
-        t : time
-    """
     # unpack state
     x, y = u[1], u[2]
     vx, vy = u[3], u[4]
@@ -213,10 +230,18 @@ end
 
 # -------------------------------------------------------------------------------- #
 # Equations of motion for ER3BP
+"""
+    rhs_er3bp_sv!(du,u,p,t)
+
+ER3BP equation of motion
+
+# Arguments
+    - `du`: cache array of duative of state-vector
+    - `u`: state-vector
+    - `p`: parameters, where p[1] = μ, p[2] = ecc, p[3] = t0
+    - `t`: time
+"""
 function rhs_er3bp_sv!(du,u,p,t)
-    """ER3BP equation of motion
-    Parameters p should hold p=(mu, ecc, t0)
-    """
    # ER3BP equation of motion
    # unpack arguments
    mu = p[1]
@@ -254,11 +279,19 @@ function rhs_er3bp_sv!(du,u,p,t)
 end
 
 
+
+"""
+    rhs_er3bp_svstm!(du,u,p,t)
+
+ER3BP equation of motion with STM
+
+# Arguments
+    - `du`: cache array of duative of state-vector
+    - `u`: state-vector
+    - `p`: parameters, where p[1] = μ, p[2] = ecc, p[3] = t0
+    - `t`: time
+"""
 function rhs_er3bp_svstm!(du,u,p,t)
-    """ER3BP equation of motion with STM
-    Parameters p should hold p=(mu, ecc, t0)
-    """
-    #function du = rhs_er3bp_stm(t, X, mu, e)
     # ER3BP equation of motion
     # unpack arguments
     mu = p[1]

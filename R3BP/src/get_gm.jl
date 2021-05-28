@@ -4,20 +4,23 @@ Functions define GM values of solar system objects
 
 
 # ------------------------------------------------------------------------- #
+"""
+    get_gm(args...)
+
+Function returns GM value of body specified by NAIF ID.
+For body names, refer to: https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/req/naif_ids.html
+
+# Arguments
+    naifIDs (str): tuple containing strings of naif ID to use to extract GM values. Multiple naifIDs may be passed in a single function call.
+
+# Returns
+    (lst): lst of GM values
+
+# Examples
+    >>> get_gm("399", "301")
+    [398600.435436096, 4902.800066163796]
+"""
 function get_gm(args...)
-    """Function returns GM value of body specified by NAIF ID.
-    For body names, refer to: https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/req/naif_ids.html
-
-    Args:
-        naifIDs (str): tuple containing strings of naif ID to use to extract GM values. Multiple naifIDs may be passed in a single function call.
-
-    Returns:
-        (lst): lst of GM values
-
-    Examples:
-        >>> get_gm("399", "301")
-        [398600.435436096, 4902.800066163796]
-    """
     # call gm values
     de431gm = get_gm_de431()
     gm_out = []
@@ -30,14 +33,15 @@ end
 
 
 # ------------------------------------------------------------------------- #
-function get_gm_de431()
-    """Function returns tuple of gm values from de431 spice kernel
+"""
+    get_gm_de431()
 
-    Args:
-        None
-    Returns:
-        (dict)=> dictionary with fields defined by "BODY" + <NAIF body ID> + "_GM"", which contains a tuple of the GM value of the corresponding body
-    """
+Function returns tuple of gm values from de431 spice kernel
+
+# Returns
+    (dict)=> dictionary with fields defined by "BODY" + <NAIF body ID> + "_GM"", which contains a tuple of the GM value of the corresponding body
+"""
+function get_gm_de431()
     de431 = Dict(
         "BODY1_GM"       => 2.2031780000000021E+04 ,
         "BODY2_GM"       => 3.2485859200000006E+05 ,

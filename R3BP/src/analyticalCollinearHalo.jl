@@ -13,33 +13,30 @@ struct Struct_out_halo_analytical
    period
 end
 
-function halo_analytical_construct(
-            mu,
-            lp,
-            Az_km,
-            lstar,
-            northsouth,
-            phi::Float64=0.0)
-   """Generate analytical approx. of halo about collinear libration point
 
-      Args:
-         mu
-         lp: (1, 2, or 3)
-         Az_km
-         northsouth (int): (1 or 3)
-         phi: 0.0 or pi
+"""
+   halo_analytical_construct(mu::Float64, lp::Int, Az_km::Float64, lstar::Float64, northsouth::Int, phi::Float64=0.0)
 
-      Returns:
-         T (float): 3rd order period of halo
-         X0
-         x_analytic_synodic
-         y_analytic_synodic
-         z_analytic_synodic
-         xdot_analytic_synodic
-         ydot_analytic_synodic
-         zdot_analytic_synodic
-   """
+Generate analytical approx. of halo about collinear libration point
 
+# Arguments
+      mu
+      lp: (1, 2, or 3)
+      Az_km
+      northsouth (int): (1 or 3)
+      phi: 0.0 or pi
+
+# Returns
+      T (float): 3rd order period of halo
+      X0
+      x_analytic_synodic
+      y_analytic_synodic
+      z_analytic_synodic
+      xdot_analytic_synodic
+      ydot_analytic_synodic
+      zdot_analytic_synodic
+"""
+function halo_analytical_construct(mu::Float64, lp::Int, Az_km::Float64, lstar::Float64, northsouth::Int, phi::Float64=0.0)
    # function to define lagrange points
    LP = lagrangePoints(mu)
 

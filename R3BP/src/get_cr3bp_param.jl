@@ -3,11 +3,11 @@ Function define CR3BP system parameters
 """
 
 struct CR3BP_param
-    mu
-    lstar
-    tstar
-    mstar
-    m2_soi
+    mu::Float64
+    lstar::Float64
+    tstar::Float64
+    mstar::Float64
+    m2_soi::Float64
 end
 
 

@@ -5,7 +5,12 @@ Function associated with manifold
 
 # -------------------------------------------------------------------------------- #
 # methods associated with STM
-function get_stm(sol, idx)
+"""
+    get_stm(sol, idx::Int)
+
+Extract STM from solution of ODEProblem
+"""
+function get_stm(sol, idx::Int)
     if length(sol.u[1])==20
         stm = reshape(sol.u[idx][4+1:end], (4, 4))'
     elseif length(sol.u[1])==42
@@ -17,6 +22,11 @@ end
 
 # -------------------------------------------------------------------------------- #
 # methods associated with manifold computation
+"""
+    get_stable_unstable_eigvecs(λs, vs)
+
+Identidy stable and unstable eigenvalue-eigenvector pair
+"""
 function get_stable_unstable_eigvecs(λs, vs)
     idx_stb_unstb = [];
     for idx in 1:length( λs )
@@ -40,10 +50,14 @@ function get_stable_unstable_eigvecs(λs, vs)
 end
 
 
-function get_eigenvector(monodromy, stable=true)
+"""
+    get_eigenvector(monodromy, stable::Bool=true)
+
+Get eigenvectors from monodromy matrix
+"""
+function get_eigenvector(monodromy, stable::Bool=true)
     λs = eigvals(monodromy)
     vs = eigvecs(monodromy)
-
     eig_unstb, eig_stb, v_unstb, v_stb = get_stable_unstable_eigvecs(λs, vs)
     @printf("Linear stability ν = %1.4f \n", 0.5*(abs(eig_unstb) + abs(eig_stb)))
     @printf("Eigenvalue unstable: %1.4f, stable: %1.4f, product: %1.4f\n", eig_unstb, eig_stb, eig_unstb*eig_stb)
@@ -55,9 +69,15 @@ function get_eigenvector(monodromy, stable=true)
 end
 
 
-function scale_ϵ(mu, x0, period, stable, monodromy, y0, lstar::Float64, relative_tol_manifold::Float64=0.1, absolute_tol_manifold_km::Float64=100.0)
-    """Function linear perturbation ϵ magnitude for manifolds"""
+"""
+    scale_ϵ(μ, x0, period, stable, monodromy, y0, lstar::Float64, relative_tol_manifold::Float64=0.1, absolute_tol_manifold_km::Float64=100.0)
 
+Obtain linear perturbation ϵ magnitude for manifolds
+
+# Arguments
+    - `μ::Float64`: CR3BP parameter
+"""
+function scale_ϵ(μ, x0, period, stable, monodromy, y0, lstar::Float64, relative_tol_manifold::Float64=0.1, absolute_tol_manifold_km::Float64=100.0)
     if length(x0)==4
         idx_pos_last = 2
     elseif length(x0)==6
@@ -92,11 +112,11 @@ function scale_ϵ(mu, x0, period, stable, monodromy, y0, lstar::Float64, relativ
         x0_manifold = x0 + ϵ_try*y0#reshape(y0, (1,length(x0)))
 
         if stable==true   # stable case
-            #prop_manif_out = propagate_cr3bp(mu, x0_manifold, -period)
-            prob_estErr = ODEProblem(rhs_pcr3bp_sv!, x0_manifold, (0, -period), (mu));
+            #prop_manif_out = propagate_cr3bp(μ, x0_manifold, -period)
+            prob_estErr = ODEProblem(rhs_pcr3bp_sv!, x0_manifold, (0, -period), (μ));
         else               # unstable case
-            #prop_manif_out = propagate_cr3bp(mu, x0_manifold, period)
-            prob_estErr = ODEProblem(rhs_pcr3bp_sv!, x0_manifold, (0, period), (mu));
+            #prop_manif_out = propagate_cr3bp(μ, x0_manifold, period)
+            prob_estErr = ODEProblem(rhs_pcr3bp_sv!, x0_manifold, (0, period), (μ));
         end
         sol = solve(prob_estErr, Tsit5(), reltol=1e-11, abstol=1e-11);
 
@@ -118,7 +138,7 @@ end
 ## manifold function
 """
     get_manifold(
-           mu::Float64,
+           μ::Float64,
            x0::Array,  # ::Array{Float64,2},
            period::Float64,
            tf::Float64,
@@ -140,7 +160,7 @@ Function to obtain manifold of LPO
     - method
     """
 function get_manifold(
-            mu::Float64,
+            μ::Float64,
             x0::Array,
             period::Float64,
             tf::Float64,
@@ -219,11 +239,11 @@ function get_manifold(
     if length(x0)==4
         #x0_stm = vcat(x0, [1 0 0 0  0 1 0 0  0 0 1 0  0 0 0 1]);
         x0_stm = vcat(x0iter, reshape(I(4), (16,)))[:]
-        prob_lpo = ODEProblem(rhs_pcr3bp_svstm!, x0_stm, period, (mu));
+        prob_lpo = ODEProblem(rhs_pcr3bp_svstm!, x0_stm, period, (μ));
     elseif length(x0)==6
         #x0_stm = vcat(x0, [1 0 0 0 0 0  0 1 0 0 0 0  0 0 1 0 0 0  0 0 0 1 0 0  0 0 0 0 1 0  0 0 0 0 0 1]);
         x0_stm = vcat(x0, reshape(I(6), (36,)))[:]
-        prob_lpo = ODEProblem(rhs_cr3bp_svstm!, x0_stm, period, (mu));
+        prob_lpo = ODEProblem(rhs_cr3bp_svstm!, x0_stm, period, (μ));
     else
         error("x0 should be length 4 or 6")
     end
@@ -243,7 +263,7 @@ function get_manifold(
     if :ϵ in keys(kwargs)
         ϵ = kwargs[:ϵ];
     else
-        ϵ = scale_ϵ(mu, x0, period, stable, monodromy, y0, lstar, relative_tol_manifold, absolute_tol_manifold_km);
+        ϵ = scale_ϵ(μ, x0, period, stable, monodromy, y0, lstar, relative_tol_manifold, absolute_tol_manifold_km);
     end
 
     # decide sign of ϵ based on xdir
@@ -262,7 +282,9 @@ function get_manifold(
     else
         error("xdir should be \"positive\" or \"negative\"")
     end
-    @printf("Using linear perturbation ϵ = %s \n", ϵ_corr)
+    if verbosity > 0
+        @printf("Using linear perturbation ϵ = %s \n", ϵ_corr)
+    end
 
     # ---------- construct and append initial condition ---------- #
     x0_ptrbs = []
@@ -277,12 +299,12 @@ function get_manifold(
 
     # define base ODE problem for manifold branch
     if length(x0)==4
-        prob_branch = ODEProblem(rhs_pcr3bp_sv!, reshape(x0_ptrbs[1],(1,4)), tf, (mu));
+        prob_branch = ODEProblem(rhs_pcr3bp_sv!, reshape(x0_ptrbs[1],(1,4)), tf, (μ));
     elseif length(x0)==6
-        prob_branch = ODEProblem(rhs_cr3bp_sv!, reshape(x0_ptrbs[1],(1,6)), tf, (mu));
+        prob_branch = ODEProblem(rhs_cr3bp_sv!, reshape(x0_ptrbs[1],(1,6)), tf, (μ));
     end
 
-    # ---------- ensemble simulation ---------- #
+    # ---------- ensemble siμlation ---------- #
     function prob_func(prob, i, repeat)
         remake(prob, u0=reshape(x0_ptrbs[i],(1,length(x0))))
     end
@@ -307,8 +329,13 @@ struct Struct_out_PoincareSection
     t
 end
 
+
+"""
+    get_manifold_ps(sim_manifold)
+
+Get manifold poincare section
+"""
 function get_manifold_ps(sim_manifold)
-    """Get manifold poincare section"""
     # initialize array of poincare section
     t_ps = zeros(length(sim_manifold))
     x_ps, y_ps   = zeros(length(sim_manifold)), zeros(length(sim_manifold))

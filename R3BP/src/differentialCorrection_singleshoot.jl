@@ -74,9 +74,11 @@ end
 
 
 """
+    ssdc_periodic_xzplane(p, x0, period0; kwargs...)
+
 Single-shooting differential correction for periodic trajectory with symmetry across xz-plane
 
-Args:
+# Arguments
     p (tuple): parameters for DifferentialEquations
     x0 (Array):
     period0 (float):
@@ -88,8 +90,9 @@ Args:
         fix
         tolDC
         system (str): "cr3bp" or "er3bp"
+        stm_option (str): "analytical" or "ad"
 
-Returns:
+# Returns
     (struct): struct with fields: x0, period, sol, flag, fiters
 """
 function ssdc_periodic_xzplane(p, x0, period0; kwargs...)

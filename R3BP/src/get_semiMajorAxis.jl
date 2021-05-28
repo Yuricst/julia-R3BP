@@ -3,20 +3,23 @@ Functions define semi-major axis values of solar system objects
 """
 
 # ------------------------------------------------------------------------- #
+"""
+    get_semiMajorAxes(args...)
+
+Function returns semi-major axis value of body specified by NAIF ID.
+For body names, refer to=> https=>//naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/req/naif_ids.html
+
+Args:
+    naifIDs (str)=> tuple containing strings of naif ID to use to extract GM values. Multiple naifIDs may be passed in a single function call.
+
+Returns:
+    (lst)=> lst of semi-major axis values, in km
+
+Examples:
+    >>> get_semiMajorAxes("399", "301")
+    [149600000.0, 384400.0]
+"""
 function get_semiMajorAxes(args...)
-    """Function returns semi-major axis value of body specified by NAIF ID.
-    For body names, refer to=> https=>//naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/req/naif_ids.html
-
-    Args:
-        naifIDs (str)=> tuple containing strings of naif ID to use to extract GM values. Multiple naifIDs may be passed in a single function call.
-
-    Returns:
-        (lst)=> lst of semi-major axis values, in km
-
-    Examples:
-        >>> get_semiMajorAxes("399", "301")
-        [149600000.0, 384400.0]
-    """
     # call gm values
     de431a = get_semiMajorAxes_dict()
     a_out = []
@@ -29,14 +32,15 @@ end
 
 
 # ------------------------------------------------------------------------- #
-function get_semiMajorAxes_dict()
-    """get_semiMajorAxes_dict returns tuple of gm values from de431 spice kernel
+"""
+    get_semiMajorAxes_dict()
 
-    Args:
-        None
-    Returns:
-        (dict)=> dictionary with fields defined by "BODY" + <NAIF body ID> + "_semiMajorAxis"", which contains a tuple of the GM value of the corresponding body
-    """
+Get tuple of gm values from de431 spice kernel
+
+# Returns
+    (dict)=> dictionary with fields defined by "BODY" + <NAIF body ID> + "_semiMajorAxis"", which contains a tuple of the GM value of the corresponding body
+"""
+function get_semiMajorAxes_dict()
     de431 = Dict(
         # "BODY1_semiMajorAxis"       => 2.2031780000000021E+04 ,
         # "BODY2_semiMajorAxis"       => 3.2485859200000006E+05 ,
