@@ -371,3 +371,56 @@ function rhs_er3bp_svstm!(du,u,p,t)
     #     end
     # end
 end
+
+
+
+# -------------------------------------------------------------------------------- #
+# Equations of motion for BCR4BP
+"""
+    rhs_bcr4bp_sv!(du,u,p,t)
+
+BCR4BP equation of motion
+
+# Arguments
+    - `du`: cache array of duative of state-vector
+    - `u`: state-vector
+    - `p`: parameters, where p[1] = μ, p[2] = μ_3, p[3] = t0, p[4] = a, p[5] = ω_s
+    - `t`: time
+"""
+function rhs_bcr4bp_sv!(du,u,p,t)
+    # ER3BP equation of motion
+    # unpack arguments
+    mu  = p[1]
+    μ_3 = p[2]
+    t0  = p[3]
+    a_s = p[4]
+    ω_s = p[5]
+    # decompose state
+    x = u[1];
+    y = u[2];
+    z = u[3];
+    vx = u[4];
+    vy = u[5];
+    vz = u[6];
+
+    # calculate radii
+    r1 = sqrt( (x+mu)^2 + y^2 + z^2 );
+    r2 = sqrt( (x-1+mu)^2 + y^2 + z^2 );
+
+    # sun position
+    xs = a_s*cos(ω_s*t + t0)
+    ys = a_s*sin(ω_s*t + t0)
+    zs = 0.0
+    r3 = sqrt( (x-xs)^2 + (y-ys)^2 + (z-zs)^2 )
+
+    # --- STATE DERIVATIVE --- #
+    # position-state derivative
+    du[1] = vx;
+    du[2] = vy;
+    du[3] = vz;
+
+    # velocity derivatives
+    du[3] =  2*vy + x - ((1-mu)/r1^3)*(mu+x) + (mu/r2^3)*(1-mu-x) + ( -(μ_3/r3^3)*(x-xs) - (μ_3/a_s^3)*xs )
+    du[4] = -2*vx + y - ((1-mu)/r1^3)*y      - (mu/r2^3)*y        + ( -(μ_3/r3^3)*(y-ys) - (μ_3/a_s^3)*ys )
+    du[5] =           - ((1-mu)/r1^3)*z      - (mu/r2^3)*z        + ( -(μ_3/r3^3)*(z)    - (μ_3/a_s^3)*zs )
+end
