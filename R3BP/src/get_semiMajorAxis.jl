@@ -51,7 +51,7 @@ function get_semiMajorAxes_dict()
         # "BODY7_semiMajorAxis"       => 5.7945486000000080E+06 ,
         # "BODY8_semiMajorAxis"       => 6.8365271005800236E+06 ,
         # "BODY9_semiMajorAxis"       => 9.7700000000000068E+02 ,
-        # "BODY10_semiMajorAxis"      => 1.3271244004193938E+11 ,
+        #"BODY10_semiMajorAxis"      => 1.3271244004193938E+11 ,
 
         "BODY199_semiMajorAxis"     =>  57.91e6  ,
         "BODY299_semiMajorAxis"     => 108.21e6  ,
