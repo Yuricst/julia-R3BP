@@ -23,6 +23,10 @@ include("get_gm.jl")
 include("get_semiMajorAxis.jl")
 include("get_cr3bp_param.jl")
 
+# for trajectory optimization
+include("deltaV_transcription.jl")
+include("equationsOfMotionWithThrust.jl")
+
 # Misc
 include("unpack_kwargs.jl")
 
