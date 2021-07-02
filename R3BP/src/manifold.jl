@@ -205,7 +205,7 @@ function get_manifold(
     y0 = get_eigenvector(monodromy, stable);
 
     # define ϵ (linear perturbation)
-    ϵ = assign_from_kwargs(kwargs_dict, :ϵ, scale_ϵ(mu, x0, period, stable, monodromy, y0, lstar, relative_tol_manifold, absolute_tol_manifold_km))
+    ϵ = assign_from_kwargs(kwargs_dict, :ϵ, scale_ϵ(μ, x0, period, stable, monodromy, y0, lstar, relative_tol_manifold, absolute_tol_manifold_km))
 
     # decide sign of ϵ based on xdir
     if cmp(xdir, "positive")==0
