@@ -70,14 +70,16 @@ end
 
 
 """
-    scale_ϵ(μ, x0, period, stable, monodromy, y0, lstar::Float64, relative_tol_manifold::Float64=0.1, absolute_tol_manifold_km::Float64=100.0)
+    scale_ϵ(μ, x0, period, stable, monodromy, y0, lstar::Float64,
+    relative_tol_manifold::Float64=0.1, absolute_tol_manifold_km::Float64=100.0)
 
 Obtain linear perturbation ϵ magnitude for manifolds
 
 # Arguments
     - `μ::Float64`: CR3BP parameter
 """
-function scale_ϵ(μ, x0, period, stable, monodromy, y0, lstar::Float64, relative_tol_manifold::Float64=0.1, absolute_tol_manifold_km::Float64=100.0)
+function scale_ϵ(μ, x0, period, stable, monodromy, y0, lstar::Float64,
+    relative_tol_manifold::Float64=0.1, absolute_tol_manifold_km::Float64=100.0)
     if length(x0)==4
         idx_pos_last = 2
     elseif length(x0)==6
