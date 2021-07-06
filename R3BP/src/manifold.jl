@@ -70,14 +70,16 @@ end
 
 
 """
-    scale_ϵ(μ, x0, period, stable, monodromy, y0, lstar::Float64, relative_tol_manifold::Float64=0.1, absolute_tol_manifold_km::Float64=100.0)
+    scale_ϵ(μ, x0, period, stable, monodromy, y0, lstar::Float64,
+    relative_tol_manifold::Float64=0.1, absolute_tol_manifold_km::Float64=100.0)
 
 Obtain linear perturbation ϵ magnitude for manifolds
 
 # Arguments
     - `μ::Float64`: CR3BP parameter
 """
-function scale_ϵ(μ, x0, period, stable, monodromy, y0, lstar::Float64, relative_tol_manifold::Float64=0.1, absolute_tol_manifold_km::Float64=100.0)
+function scale_ϵ(μ, x0, period, stable, monodromy, y0, lstar::Float64,
+    relative_tol_manifold::Float64=0.1, absolute_tol_manifold_km::Float64=100.0)
     if length(x0)==4
         idx_pos_last = 2
     elseif length(x0)==6
@@ -138,27 +140,17 @@ end
 ## manifold function
 """
     get_manifold(
-           μ::Float64,
-           x0::Array,  # ::Array{Float64,2},
-           period::Float64,
-           tf::Float64,
-           stable::Boolean;
-           kwargs...)
+            μ::Float64,
+            x0::Array,
+            period::Float64,
+            tf::Float64,
+            stable::Bool;
+            kwargs...)
 
 Function to obtain manifold of LPO
 
-# Optional arugments:
-    - ϵ
-    - xdir (default: "positive")
-    - n
-    - callback
-    - lstar
-    - relative_tol_manifold
-    - absolute_tol_manifold_km
-    - reltol
-    - abstol
-    - method
-    """
+# Arguments
+"""
 function get_manifold(
             μ::Float64,
             x0::Array,
@@ -167,59 +159,17 @@ function get_manifold(
             stable::Bool;
             kwargs...)
     # ---------- extract arguments ---------- #
-    if :xdir in keys(kwargs)
-        xdir = kwargs[:xdir];
-    else
-        xdir = "positive";
-    end
-
-    if :n in keys(kwargs)
-        n = kwargs[:n];
-    else
-        n = 50
-    end
-
-    if :callback in keys(kwargs)
-        callback = kwargs[:callback];
-    else
-        callback = nothing;
-    end
-
-    if :lstar in keys(kwargs)
-        lstar = kwargs[:lstar];
-    else
-        lstar=384400.0;
-    end
-
-    if :relative_tol_manifold in keys(kwargs)
-        relative_tol_manifold = kwargs[:relative_tol_manifold];
-    else
-        relative_tol_manifold=0.1;
-    end
-
-    if :absolute_tol_manifold_km in keys(kwargs)
-        absolute_tol_manifold_km = kwargs[:absolute_tol_manifold_km];
-    else
-        absolute_tol_manifold_km=100.0;
-    end
-
-    if :reltol in keys(kwargs)
-        reltol = kwargs[:reltol];
-    else
-        reltol=1e-11;
-    end
-
-    if :abstol in keys(kwargs)
-        abstol = kwargs[:abstol];
-    else
-        abstol=1e-11;
-    end
-
-    if :method in keys(kwargs)
-        method = kwargs[:method];
-    else
-        method=Tsit5();
-    end
+    kwargs_dict = Dict(kwargs)
+    stable   = assign_from_kwargs(kwargs_dict, :stable, true)
+    xdir     = assign_from_kwargs(kwargs_dict, :xdir, "positive")
+    n        = assign_from_kwargs(kwargs_dict, :n, 100)
+    callback = assign_from_kwargs(kwargs_dict, :callback, nothing)
+    lstar    = assign_from_kwargs(kwargs_dict, :lstar, 1.0)
+    relative_tol_manifold    = assign_from_kwargs(kwargs_dict, :relative_tol_manifold, 0.1)
+    absolute_tol_manifold_km = assign_from_kwargs(kwargs_dict, :absolute_tol_manifold_km, 100.0)
+    reltol = assign_from_kwargs(kwargs_dict, :reltol, 1.e-12)
+    abstol = assign_from_kwargs(kwargs_dict, :abstol, 1.e-12)
+    method = assign_from_kwargs(kwargs_dict, :method, Tsit5())
 
     if :verbosity in keys(kwargs)
         verbosity = kwargs[:verbosity]
@@ -256,24 +206,17 @@ function get_manifold(
     # get eigenvectors at initial state
     y0 = get_eigenvector(monodromy, stable);
 
-    # iterate over each branch to be generated
-    #ts_branch = LinRange(0, tf, steps);
-
     # define ϵ (linear perturbation)
-    if :ϵ in keys(kwargs)
-        ϵ = kwargs[:ϵ];
-    else
-        ϵ = scale_ϵ(μ, x0, period, stable, monodromy, y0, lstar, relative_tol_manifold, absolute_tol_manifold_km);
-    end
+    ϵ = assign_from_kwargs(kwargs_dict, :ϵ, scale_ϵ(μ, x0, period, stable, monodromy, y0, lstar, relative_tol_manifold, absolute_tol_manifold_km))
 
     # decide sign of ϵ based on xdir
-    if cmp(xdir,"positive")==0
+    if cmp(xdir, "positive")==0
         if y0[1] < 0.0
             ϵ_corr = -abs(ϵ)
         else
             ϵ_corr =  abs(ϵ)
         end
-    elseif cmp(xdir,"negative")==0
+    elseif cmp(xdir, "negative")==0
         if y0[1] > 0.0
             ϵ_corr = -abs(ϵ)
         else

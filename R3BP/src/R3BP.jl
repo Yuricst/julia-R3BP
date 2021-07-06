@@ -30,9 +30,17 @@ include("equationsOfMotionWithThrust.jl")
 # Misc
 include("unpack_kwargs.jl")
 
-#include("get_poincareSection_from_manifold.jl")
+# utility in R3BP
+export lagrangePoint
+
+# RHS
+export rhs_cr3bp_sv, rhs_cr3bp_svstm, rhs_pcr3bp_sv, rhs_pcr3bp_svstm, rhs_pcr3bp_svstm
 
 
-export lagrangePoint, rhs_cr3bp_sv, rhs_cr3bp_svstm, rhs_pcr3bp_sv, rhs_pcr3bp_svstm, rhs_pcr3bp_svstm, get_stm, scale_ϵ, get_manifold
+# manifold function
+export get_stm, scale_ϵ, get_manifold
+
+# differential correction
+export halo_analytical_construct, ssdc_periodic_xzplane
 
 end
