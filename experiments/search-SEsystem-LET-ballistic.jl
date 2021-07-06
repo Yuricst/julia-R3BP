@@ -75,9 +75,12 @@ function main()
 	mu = params.mu
 	println("mu: $mu")
 
+	# ---------- callbacks ---------- #
+	affect!(integrator) = terminate!(integrator)
+	
 	# callback event based on having perigee around 0.9~1.1 * sma of the moon
 	moon_sma = 384748.0 / params.lstar
-	function condition(u,t,integrator)
+	function condition_perigee_radius(u,t,integrator)
 	    r_local = sqrt((u[1] - (1-mu))^2 + u[2]^2)
 	    if 0.9moon_sma < r_local < 1.1moon_sma
 	        return check_apsis(u, mu)   # when hitting apsis
@@ -85,9 +88,20 @@ function main()
 	        return NaN
 	    end
 	end
-	affect!(integrator) = terminate!(integrator)
-	cb = ContinuousCallback(condition,affect!)
+	cb1 = ContinuousCallback(condition_perigee_radius, affect!)
 
+	# callback event based on intersecting with n*earth radius
+	nr_earth = 6378.0 / params.lstar
+	function condition_earthIntersect(u,t,integrator)
+		r_local = sqrt((u[1] - (1-mu))^2 + u[2]^2)
+		return r_local - nr_earth
+	end
+	cb2 = ContinuousCallback(condition_earthIntersect, affect!)
+
+	# create call back set
+	cbs = CallbackSet(cb1, cb2)
+
+	# ---------- setup on ODE problem ---------- #
 	# tolerance of ODE problem
 	reltol = 1.0e-13
 	abstol = 1.0e-13
@@ -125,23 +139,29 @@ function main()
 
 	# ---------- ensemble simulation ---------- #
 	function prob_func(prob, i, repeat)
+		print("\rproblem # $i / $nic")
 	    remake(prob, u0=x0s[i], tspan=(0.0, 2.0tfs[i]))
 	end
 	ensemble_prob = EnsembleProblem(prob, prob_func=prob_func)
-	sim = solve(ensemble_prob, Tsit5(), EnsembleThreads(), trajectories=length(x0s), callback=cb, reltol=reltol, abstol=abstol);
+	sim = solve(ensemble_prob, Tsit5(), EnsembleThreads(), 
+		trajectories=length(x0s), callback=cbs, reltol=reltol, abstol=abstol);
 
+	# ---------- post-process result ---------- #
 	# create storage for terminated solutions
 	out_term = []
 	for (idx, sol) in enumerate(sim)
 	    if sol.retcode == :Terminated
-	        push!(out_term, Dict(
-	            "x0" => sol.u[1],
-	            "xf" => sol.u[end],
-	            "tf" => sol.t[end],
-	            "theta" => sim_info[idx]["theta"],
-	            "rp" => sim_info[idx]["rp"],
-	            "ra" => sim_info[idx]["ra"],
-	        ))
+	    	# check which event terminated the propagation
+	    	if isnan(condition_perigee_radius(sol.u[end], 0.0, 0.0)) == false
+		        push!(out_term, Dict(
+		            "x0" => sol.u[1],
+		            "xf" => sol.u[end],
+		            "tf" => sol.t[end],
+		            "theta" => sim_info[idx]["theta"],
+		            "rp" => sim_info[idx]["rp"],
+		            "ra" => sim_info[idx]["ra"],
+		        ))
+		    end
 	    end
 	end
 	n_found = length(out_term)
