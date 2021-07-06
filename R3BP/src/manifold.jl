@@ -170,6 +170,7 @@ function get_manifold(
     reltol = assign_from_kwargs(kwargs_dict, :reltol, 1.e-12)
     abstol = assign_from_kwargs(kwargs_dict, :abstol, 1.e-12)
     method = assign_from_kwargs(kwargs_dict, :method, Tsit5())
+    ϵ      = assign_from_kwargs(kwargs_dict, :ϵ, nothing)
 
     if :verbosity in keys(kwargs)
         verbosity = kwargs[:verbosity]
@@ -207,7 +208,9 @@ function get_manifold(
     y0 = get_eigenvector(monodromy, stable);
 
     # define ϵ (linear perturbation)
-    ϵ = assign_from_kwargs(kwargs_dict, :ϵ, scale_ϵ(μ, x0, period, stable, monodromy, y0, lstar, relative_tol_manifold, absolute_tol_manifold_km))
+    if isnothing(ϵ)
+        ϵ = assign_from_kwargs(kwargs_dict, :ϵ, scale_ϵ(μ, x0, period, stable, monodromy, y0, lstar, relative_tol_manifold, absolute_tol_manifold_km))
+    end
 
     # decide sign of ϵ based on xdir
     if cmp(xdir, "positive")==0
