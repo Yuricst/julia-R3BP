@@ -67,18 +67,16 @@ then define parameters for generating manifold
 # parameters for manifolds
 num_branch = 100;
 stability = true;
-epsilon = 1e-5
+ϵ = 1e-5  # or set to nothing to let the function scale based on LPO stability
 lstar = 384400.
-relative_tol_manifold = 0.1
-absolute_tol_manifold_km = 100.0
-tf = -7.0
+tf = -5.0
 ```
 and finally the function wraps DifferentialEquations' `EnsembleProblem()`
 
 ```julia
 # generate manifolds
 outsim = R3BP.get_manifold(mu, X0, T, tf, stability;
-    n=num_branch, ϵ=epsilon, callback=nothing, xdir="positive");
+    n=num_branch, ϵ=ϵ, callback=nothing, xdir="positive");
 
 # plot manifolds
 plot(outsim, linealpha=0.4, vars=(1,2), flip=false, aspect_ratio=:equal)
