@@ -33,6 +33,6 @@ include("unpack_kwargs.jl")
 #include("get_poincareSection_from_manifold.jl")
 
 
-#export lagrangePoint, rhs_cr3bp_sv, rhs_cr3bp_svstm, rhs_pcr3bp_sv, rhs_pcr3bp_svstm, rhs_pcr3bp_svstm, get_stm, scale_ϵ, get_manifold
+export lagrangePoint, rhs_cr3bp_sv, rhs_cr3bp_svstm, rhs_pcr3bp_sv, rhs_pcr3bp_svstm, rhs_pcr3bp_svstm, get_stm, scale_ϵ, get_manifold
 
 end
