@@ -36,7 +36,6 @@ export lagrangePoint
 # RHS
 export rhs_cr3bp_sv, rhs_cr3bp_svstm, rhs_pcr3bp_sv, rhs_pcr3bp_svstm, rhs_pcr3bp_svstm
 
-
 # manifold function
 export get_stm, scale_ϵ, get_manifold
 
