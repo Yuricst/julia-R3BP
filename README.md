@@ -1,7 +1,7 @@
 # Restricted Three Body Problem in Julia
 
-Library implements methods for working with the restricted three body problem (R3BP). 
-User is expected to be familiar with `DifferentialEquations`, which `R3BP` utilizes for most primary functions. 
+Library implements methods for working with the restricted three body problem (R3BP).
+User is expected to be familiar with `DifferentialEquations`, which `R3BP` utilizes for most primary functions.
 
 
 ### Dependencies
@@ -86,4 +86,8 @@ plot(outsim, linealpha=0.4, vars=(1,2), flip=false, aspect_ratio=:equal)
 
 ### Dev-notes
 - [x] ER3BP propagator
-- [ ] BCR4BP propagator
+- [x] BCR4BP propagator
+- [x] BCR4BP STM propagator
+- [ ] Natural parameter continuation
+- [ ] Pseudo-arclength continuation
+- [ ] LPO family generation
