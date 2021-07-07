@@ -58,11 +58,8 @@ end
 
 Check if apsis is hit for planar problem
 """
-function check_apsis(sv, mu::Float64, m::Int=2)
-    if m == 2
-        x = sv[1] - (1-mu)
-    end
-    return dot([x, sv[2]], sv[3:4])
+function check_apsis(sv, mu::Float64)
+    return dot([sv[1] - (1-mu), sv[2]], sv[3:4])
 end
 
 
@@ -77,29 +74,42 @@ function main()
 
 	# ---------- callbacks ---------- #
 	affect!(integrator) = terminate!(integrator)
-	
+
 	# callback event based on having perigee around 0.9~1.1 * sma of the moon
 	moon_sma = 384748.0 / params.lstar
 	function condition_perigee_radius(u,t,integrator)
 	    r_local = sqrt((u[1] - (1-mu))^2 + u[2]^2)
 	    if 0.9moon_sma < r_local < 1.1moon_sma
-	        return check_apsis(u, mu)   # when hitting apsis
+	        return check_apsis(u, mu)  # when hitting apsis
 	    else
 	        return NaN
 	    end
 	end
 	cb1 = ContinuousCallback(condition_perigee_radius, affect!)
 
-	# callback event based on intersecting with n*earth radius
-	nr_earth = 6378.0 / params.lstar
-	function condition_earthIntersect(u,t,integrator)
-		r_local = sqrt((u[1] - (1-mu))^2 + u[2]^2)
-		return r_local - nr_earth
+	# callback event based on intersecting with n*earth radius with vr<0
+	nr_earth = 10*6378.0 / params.lstar
+	function condition_nearth_Intersect(u,t,integrator)
+		vr_sign = check_apsis(u, mu)
+		if vr_sign < 0.0
+			r_local = sqrt((u[1] - (1-mu))^2 + u[2]^2)
+			return r_local - nr_earth
+		else
+			return NaN
+		end
 	end
-	cb2 = ContinuousCallback(condition_earthIntersect, affect!)
+	cb2 = ContinuousCallback(condition_nearth_Intersect, affect!)
+
+	# callback event when leaving n*earth_SOI
+	nearth_soi = 3*0.929e6 / params.lstar
+	function condiction_leave_nSOI(u,t,integrator)
+		r_local = sqrt((u[1] - (1-mu))^2 + u[2]^2)
+		return nearth_soi - r_local
+	end
+	cb3 = ContinuousCallback(condiction_leave_nSOI, affect!)
 
 	# create call back set
-	cbs = CallbackSet(cb1, cb2)
+	cbs = CallbackSet(cb1, cb2, cb3)
 
 	# ---------- setup on ODE problem ---------- #
 	# tolerance of ODE problem
@@ -113,8 +123,8 @@ function main()
 	x0s = []
 	tfs = []
 	sim_info = []
-	n = 360
-	n_ra = 20
+	n = 100
+	n_ra = 10
 
 	thetas = LinRange(0.0, 2π, n+1)[1:end-1]
 	ras = LinRange(0.8e6/params.lstar, 1.6e6/params.lstar, n_ra)
@@ -165,7 +175,7 @@ function main()
 	    end
 	end
 	n_found = length(out_term)
-	println("Found $n_found solutions!")
+	println("\nFound $n_found solutions!")
 
 	# export data
 	timestamp = Dates.format(Dates.now(), "yyyymmdd_HHMM")
