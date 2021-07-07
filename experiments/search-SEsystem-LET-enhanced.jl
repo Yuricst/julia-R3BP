@@ -220,5 +220,5 @@ n_ra = 40
 thetas = LinRange(0.0, 2π, n_theta+1)[1:end-1]
 ras = LinRange(1.0e6/params.lstar, 2.0e6/params.lstar, n_ra)
 
-main(thetas, ras)
+main(params, thetas, ras)
 println("Done!")
