@@ -66,7 +66,7 @@ end
 """
 Main function
 """
-function main()
+function main(thetas, ras, verbose=false)
 	# set-up Sun-Earth system
 	params = R3BP.get_cr3bp_param(10, 399)
 	mu = params.mu
@@ -119,11 +119,6 @@ function main()
 	x0s = []
 	tfs = []
 	sim_info = []
-	n = 360
-	n_ra = 20
-
-	thetas = LinRange(0.0, 2π, n+1)[1:end-1]
-	ras = LinRange(0.8e6/params.lstar, 1.6e6/params.lstar, n_ra)
 
 	for ra in ras
 	    sma = (rp+ra)/2
@@ -164,10 +159,17 @@ function main()
 		prob = ODEProblem(R3BP.rhs_pcr3bp_thrust_m1dir!, vcat(x0s[1], m0), (0.0, 2.0*tfs[1]), p)
 
 		# ---------- ensemble simulation ---------- #
-		function prob_func(prob, i, repeat)
-			print("\rproblem # $i / $nic")
-		    remake(prob, u0=vcat(x0s[i], m0), tspan=(0.0, 2.0tfs[i]))
+		if verbose==true
+			function prob_func(prob, i, repeat)
+				print("\rproblem # $i / $nic")
+			    remake(prob, u0=x0s[i], tspan=(0.0, 2.0tfs[i]))
+			end
+		else
+			function prob_func(prob, i, repeat)
+			    remake(prob, u0=x0s[i], tspan=(0.0, 2.0tfs[i]))
+			end
 		end
+
 		ensemble_prob = EnsembleProblem(prob, prob_func=prob_func)
 		sim = solve(ensemble_prob, Tsit5(), EnsembleThreads(), 
 			trajectories=length(x0s), callback=cbs, reltol=reltol, abstol=abstol);
@@ -211,9 +213,16 @@ function main()
 	end
 	print("Save data at: ")
 	println(flepath)
+	return
 end
 
 
+# ----------------------------------------- #
 # run main analysis
-main()
+n_theta = 360
+n_ra = 40
+thetas = LinRange(0.0, 2π, n_theta+1)[1:end-1]
+ras = LinRange(1.0e6/params.lstar, 2.0e6/params.lstar, n_ra)
+
+main(thetas, ras)
 println("Done!")
