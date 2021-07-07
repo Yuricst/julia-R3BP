@@ -142,16 +142,13 @@ function main(params, thetas, ras, verbose=false)
 	prob = ODEProblem(R3BP.rhs_pcr3bp_sv!, x0s[1], (0.0, 2.0*tfs[1]), (mu))
 
 	# ---------- ensemble simulation ---------- #
-	if verbose==true
-		function prob_func(prob, i, repeat)
+	function prob_func(prob, i, repeat)
+		if verbose==true
 			print("\rproblem # $i / $nic")
-		    remake(prob, u0=x0s[i], tspan=(0.0, 2.0tfs[i]))
 		end
-	else
-		function prob_func(prob, i, repeat)
-		    remake(prob, u0=x0s[i], tspan=(0.0, 2.0tfs[i]))
-		end
+	    remake(prob, u0=x0s[i], tspan=(0.0, 2.0tfs[i]))
 	end
+	
 	ensemble_prob = EnsembleProblem(prob, prob_func=prob_func)
 	sim = solve(ensemble_prob, Tsit5(), EnsembleThreads(), 
 		trajectories=length(x0s), callback=cbs, reltol=reltol, abstol=abstol);
