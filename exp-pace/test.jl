@@ -11,6 +11,6 @@ println("Testing on PACE...")
 
 np = nprocs()
 println("Number of procs ..... $np")
-
+println(Sys.cpu_info())
 
 println("Done!")
