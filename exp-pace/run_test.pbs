@@ -1,0 +1,13 @@
+#PBS -N juliaTest
+#PBS -A GT-kho34
+#PBS -l nodes=2:ppn=4
+#PBS -l pmem=2gb
+#PBS -l walltime=1:00
+#PBS -q inferno
+#PBS -j oe
+#PBS -o julia.out
+
+cd $PBS_O_WORKDIR
+module load gcc/8.3.0
+module load julia/1.6.1
+julia -p 8 test.jl
