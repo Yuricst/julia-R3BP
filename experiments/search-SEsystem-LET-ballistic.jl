@@ -150,7 +150,7 @@ function main(params, thetas, ras, verbose=false)
 	end
 	
 	ensemble_prob = EnsembleProblem(prob, prob_func=prob_func)
-	sim = solve(ensemble_prob, Tsit5(), EnsembleThreads(), 
+	sim = solve(ensemble_prob, Tsit5(), EnsembleSplitThreads(), 
 		trajectories=length(x0s), callback=cbs, reltol=reltol, abstol=abstol);
 
 	# ---------- post-process result ---------- #

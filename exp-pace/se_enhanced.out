@@ -1,0 +1,15 @@
+---------------------------------------
+Begin PBS Prologue Wed Jul  7 12:29:48 EDT 2021
+Job ID:     2288571.sched-torque.pace.gatech.edu
+User ID:    yshimane3
+Job name:   SE_enhanced
+Queue:      inferno
+End PBS Prologue Wed Jul  7 12:29:48 EDT 2021
+---------------------------------------
+
+Lmod is automatically replacing "intel/19.0.5" with "gcc/8.3.0".
+
+
+Due to MODULEPATH changes, the following have been reloaded:
+  1) mvapich2/2.3.2
+
