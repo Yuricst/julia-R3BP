@@ -66,9 +66,8 @@ end
 """
 Main function
 """
-function main(thetas, ras, verbose=false)
+function main(params, thetas, ras, verbose=false)
 	# set-up Sun-Earth system
-	params = R3BP.get_cr3bp_param(10, 399)
 	mu = params.mu
 	println("mu: $mu")
 
@@ -193,10 +192,11 @@ end
 
 # ----------------------------------------- #
 # run main analysis
+params = R3BP.get_cr3bp_param(10, 399)
 n_theta = 360
 n_ra = 40
 thetas = LinRange(0.0, 2π, n_theta+1)[1:end-1]
 ras = LinRange(1.0e6/params.lstar, 2.0e6/params.lstar, n_ra)
 
-main(thetas, ras)
+main(params, thetas, ras)
 println("Done!")
