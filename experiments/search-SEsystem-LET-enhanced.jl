@@ -88,7 +88,7 @@ function main()
 	cb1 = ContinuousCallback(condition_perigee_radius, affect!, abstol=1.0e-12,reltol=1.0e-12)
 
 	# callback event based on intersecting with n*earth radius with vr<0
-	nr_earth = nr_earth = moon_sma/2  # 10*6378.0 / params.lstar
+	nr_earth = moon_sma/2  # 10*6378.0 / params.lstar
 	function condition_nearth_Intersect(u,t,integrator)
 		vr_sign = check_apsis(u, mu)
 		if vr_sign < 0.0
@@ -140,46 +140,71 @@ function main()
 	ntf = length(tfs)
 	println("Using $nic - $ntf initial conditions")
 
+	# ---------- thruster parameter ---------- #
+	mstar = 4100.0       # 4100 in kg for bepi-colombo
+	tmax_newtons = 0.4   # N, used to be 0.4
+	tmax = tmax_newtons *(1/mstar)*(params.tstar^2/(1e3*params.lstar))
+	isp = 3500.0   # seconds
+	mdot = tmax_newtons/(isp*9.80665) *(params.tstar/mstar)
+	println("tmax: $tmax")
+	println("mdot: $mdot")
+
 	# ---------- setup on ODE problem ---------- #
 	# tolerance of ODE problem
 	reltol = 1.0e-13
 	abstol = 1.0e-13
+
 	# set-up initial problem
-	prob = ODEProblem(R3BP.rhs_pcr3bp_sv!, x0s[1], (0.0, 2.0*tfs[1]), (mu))
-
-	# ---------- ensemble simulation ---------- #
-	function prob_func(prob, i, repeat)
-		print("\rproblem # $i / $nic")
-	    remake(prob, u0=x0s[i], tspan=(0.0, 2.0tfs[i]))
-	end
-	ensemble_prob = EnsembleProblem(prob, prob_func=prob_func)
-	sim = solve(ensemble_prob, Tsit5(), EnsembleThreads(), 
-		trajectories=length(x0s), callback=cbs, reltol=reltol, abstol=abstol);
-
-	# ---------- post-process result ---------- #
-	# create storage for terminated solutions
 	out_term = []
-	for (idx, sol) in enumerate(sim)
-	    if sol.retcode == :Terminated
-	    	# check which event terminated the propagation
-	    	if isnan(condition_perigee_radius(sol.u[end], 0.0, 0.0)) == false
-		        push!(out_term, Dict(
-		            "x0" => sol.u[1],
-		            "xf" => sol.u[end],
-		            "tf" => sol.t[end],
-		            "theta" => sim_info[idx]["theta"],
-		            "rp" => sim_info[idx]["rp"],
-		            "ra" => sim_info[idx]["ra"],
-		        ))
+	for (idx_ensemble, τ_iter) in enumerate([-1.0, 1.0])
+		println("\nEnsemble sim # $idx_ensemble ..... using τ = $τ_iter")
+		#τ = -1.0
+		p = (mu, τ_iter, mdot, tmax)
+		m0 = 1.0
+		prob = ODEProblem(R3BP.rhs_pcr3bp_thrust_m1dir!, vcat(x0s[1], m0), (0.0, 2.0*tfs[1]), p)
+
+		# ---------- ensemble simulation ---------- #
+		function prob_func(prob, i, repeat)
+			print("\rproblem # $i / $nic")
+		    remake(prob, u0=vcat(x0s[i], m0), tspan=(0.0, 2.0tfs[i]))
+		end
+		ensemble_prob = EnsembleProblem(prob, prob_func=prob_func)
+		sim = solve(ensemble_prob, Tsit5(), EnsembleThreads(), 
+			trajectories=length(x0s), callback=cbs, reltol=reltol, abstol=abstol);
+
+		# ---------- post-process result ---------- #
+		# create storage for terminated solutions
+		for (idx, sol) in enumerate(sim)
+		    if sol.retcode == :Terminated
+		    	# check which event terminated the propagation
+		    	if isnan(condition_perigee_radius(sol.u[end], 0.0, 0.0)) == false
+			        push!(out_term, Dict(
+			            "x0" => sol.u[1],
+			            "xf" => sol.u[end],
+			            "tf" => sol.t[end],
+			            "theta" => sim_info[idx]["theta"],
+			            "rp" => sim_info[idx]["rp"],
+			            "ra" => sim_info[idx]["ra"],
+			            "τ" => τ_iter,
+			            "p" => p,
+			            "m0" => m0,
+			            "mf" => sol.u[end][end],
+			            "mstar" => mstar,
+			            "isp" => isp, 
+			            "mdot" => mdot,
+			            "tmax" => tmax,
+			            "mstar" => mstar,
+			        ))
+			    end
 		    end
-	    end
+		end
 	end
 	n_found = length(out_term)
 	println("\nFound $n_found solutions!")
 
 	# export data
 	timestamp = Dates.format(Dates.now(), "yyyymmdd_HHMM")
-	flename = "se_ballistic_" * timestamp
+	flename = "se_enhanced_" * timestamp
 	flepath = "./let-SunEarthSystem-data/" * flename * ".json"
 	open(flepath,"w") do f
 	    JSON.print(f, out_term)
