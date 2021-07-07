@@ -7,7 +7,7 @@
 #PBS -j oe
 #PBS -o se_ballistic.out
 
-cd ~/p-kho34-0/paceyuri/julia_R3BP/experiments
+cd ~/p-kho34-0/paceyuri/julia-R3BP/experiments
 module load gcc/8.3.0
 module load julia/1.6.1
 julia -p 16 search-SEsystem-LET-ballistic.jl
