@@ -19,6 +19,7 @@ include("lpo_stability.jl")
 include("manifold.jl")
 include("analyticalCollinearHalo.jl")
 include("differentialCorrection_singleshoot.jl")
+include("multipleshooting.jl")
 
 # LPO family handling
 include("lpo_family.jl")
@@ -34,6 +35,8 @@ include("equationsOfMotionWithThrust.jl")
 
 # Misc
 include("unpack_kwargs.jl")
+include("plot_support.jl")
+
 
 # utility in R3BP
 export lagrangePoint, get_cr3bp_param
