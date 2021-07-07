@@ -79,7 +79,7 @@ function main(params, thetas, ras, verbose=false)
 	function condition_perigee_radius(u,t,integrator)
 	    r_local = sqrt((u[1] - (1-mu))^2 + u[2]^2)
 	    if 0.9moon_sma < r_local < 1.1moon_sma
-	        return check_apsis(u, mu)  # when hitting apsis
+	        return check_apsis(u[1:4], mu)  # when hitting apsis
 	    else
 	        return NaN
 	    end
