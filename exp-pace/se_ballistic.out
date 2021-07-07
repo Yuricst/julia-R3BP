@@ -1,0 +1,16 @@
+---------------------------------------
+Begin PBS Prologue Wed Jul  7 11:16:33 EDT 2021
+Job ID:     2288113.sched-torque.pace.gatech.edu
+User ID:    yshimane3
+Job name:   SE_ballistic
+Queue:      inferno
+End PBS Prologue Wed Jul  7 11:16:33 EDT 2021
+---------------------------------------
+/var/spool/torque/mom_priv/jobs/2288113.sched-torque.pace.gatech.edu.SC: line 12: cd: /storage/home/hcoda1/7/yshimane3/p-kho34-0/paceyuri/julia_R3BP/experiments: No such file or directory
+
+Lmod is automatically replacing "intel/19.0.5" with "gcc/8.3.0".
+
+
+Due to MODULEPATH changes, the following have been reloaded:
+  1) mvapich2/2.3.2
+
