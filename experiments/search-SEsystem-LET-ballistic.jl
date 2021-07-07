@@ -119,8 +119,8 @@ function main()
 	x0s = []
 	tfs = []
 	sim_info = []
-	n = 100
-	n_ra = 10
+	n = 360
+	n_ra = 20
 
 	thetas = LinRange(0.0, 2π, n+1)[1:end-1]
 	ras = LinRange(0.8e6/params.lstar, 1.6e6/params.lstar, n_ra)
