@@ -5,7 +5,9 @@ Test for multiple shooting
 
 using LinearAlgebra
 using DifferentialEquations
+using BenchmarkTools
 using Plots
+
 pyplot()
 
 include("../R3BP/src/R3BP.jl")
@@ -72,12 +74,21 @@ solig = R3BP.sol_to_arrays(sol);   # obtain state-history as array for plotting
 ## Run multiple shooting
 tolDC = 1.e-13   # tolerance to be achieved by multiple-shooting algorithm
 x0_conv, tof_conv = R3BP.multiple_shooting(prob_stm, x0s, tofs, tolDC;
-    periodic=true, reltol=reltol, abstol=abstol);
+    periodic=true, reltol=reltol, abstol=abstol, use_ensemble=true);
 
 # propagate converged result of multiple-shooting
 prob = ODEProblem(R3BP.rhs_cr3bp_sv!, x0_conv[1:6], sum(tof_conv), (μ))
 sol = solve(prob, Tsit5(), reltol=reltol, abstol=abstol);
 solmsdc = R3BP.sol_to_arrays(sol.u);   # obtain state-history as array for plotting
+
+## Benchmarking without / with ensemble
+println("\n*** without ensemble ***")
+@benchmark x0_conv, tof_conv = R3BP.multiple_shooting(prob_stm, x0s, tofs, tolDC;
+    periodic=true, reltol=reltol, abstol=abstol, use_ensemble=false);
+
+println("\n*** with ensemble ***")
+@benchmark x0_conv, tof_conv = R3BP.multiple_shooting(prob_stm, x0s, tofs, tolDC;
+    periodic=true, reltol=reltol, abstol=abstol, use_ensemble=true);
 
 
 ## create plot of trajectory
@@ -94,4 +105,5 @@ solmsdc = R3BP.sol_to_arrays(sol.u);   # obtain state-history as array for plott
 #         label="node $i", marker=(:cross, 3.5, 3.5))
 # end
 # display(ptraj)
+
 println("Done!")

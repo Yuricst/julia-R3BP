@@ -26,12 +26,13 @@ function multiple_shooting(prob_stm::ODEProblem, x0s::Array, tofs::Array, tolDC:
     fix_xf   = assign_from_kwargs(kwargs_dict, :fix_xf, false, Bool)
 
     # ODE settings
-    method   = assign_from_kwargs(kwargs_dict, :method, Tsit5())
-    reltol   = assign_from_kwargs(kwargs_dict, :reltol, 1.e-12, Float64)
-    abstol   = assign_from_kwargs(kwargs_dict, :abstol, 1.e-12, Float64)
-    p        = assign_from_kwargs(kwargs_dict, :p, [])
-    rhs!     = assign_from_kwargs(kwargs_dict, :rhs!, nothing)
-    use_ensemble = assign_from_kwargs(kwargs_dict, :use_ensemble, false, Bool)
+    method          = assign_from_kwargs(kwargs_dict, :method, Tsit5())
+    reltol          = assign_from_kwargs(kwargs_dict, :reltol, 1.e-12, Float64)
+    abstol          = assign_from_kwargs(kwargs_dict, :abstol, 1.e-12, Float64)
+    p               = assign_from_kwargs(kwargs_dict, :p, [])
+    rhs!            = assign_from_kwargs(kwargs_dict, :rhs!, nothing)
+    use_ensemble    = assign_from_kwargs(kwargs_dict, :use_ensemble, false, Bool)
+	ensemble_method = assign_from_kwargs(kwargs_dict, :ensemble_method, EnsembleThreads())
 
     # misc function settings
     verbose  = assign_from_kwargs(kwargs_dict, :verbose, true, Bool)
@@ -97,15 +98,27 @@ function multiple_shooting(prob_stm::ODEProblem, x0s::Array, tofs::Array, tolDC:
         ferr = zeros(n_sv*n)      # error vector
     end
 
+	# create problem-remake function for ensemble simulation
+	if use_ensemble == true
+		function prob_func(prob, i, repeat)
+			x0 = vcat(x0_vec[(i-1)*n_sv + 1 : i*(n_sv)], reshape(I(n_sv), (n_sv*n_sv,)))[:]
+			if fix_time == true
+				tprop = tofs[i]
+			else
+				tprop = x0_vec[n_sv*n+i]
+			end
+			remake(prob, u0=x0, tspan=(0.0, tprop))
+		end
+	end
+
     # ------------- iterate multiple-shooting ------------- #
     for iter = 1:maxiter
 
         # re-make ODE problem and integrate until tofs[ix]
-        if use_ensemble==false
+        if use_ensemble == false
             multiple_shooting_propagate_sequential!(df, xfs, prob_stm, n, n_sv, x0_vec, tofs, fix_time, method, reltol, abstol)
         else
-            println("FIXME!")
-            multiple_shooting_propagate_ensemble!(df, xfs, prob_stm, n, n_sv, x0_vec, tofs, fix_time, method, reltol, abstol)
+            multiple_shooting_propagate_ensemble!(df, xfs, prob_stm, prob_func, ensemble_method, n, n_sv, x0_vec, tofs, fix_time, method, reltol, abstol)
         end
 
 
@@ -157,13 +170,15 @@ function multiple_shooting_propagate_sequential!(df::Matrix{Float64}, xfs::Vecto
         # fill in STM into DF matrix
         df[(i-1)*n_sv+1:i*n_sv, (i-1)*n_sv+1:i*n_sv] = transpose( reshape(sol.u[end][n_sv+1:end], (n_sv,n_sv)) )
         # if fix_time == false, fill in df/dx into DF matrix
-        duf = zeros(length(x0_stm))
+        duf = zeros(n_sv)
         if fix_time == false
             _ = rhs!(duf, sol.u[end], p, sol.t[end])
         end
+		# FIXME - append duf into DF
     end
     return
 end
+
 
 
 """
@@ -171,27 +186,24 @@ end
 
 Propagates nodes and mutates DF and xfs; solved sequentially using `ensembleSimulation()`
 """
-function multiple_shooting_propagate_ensemble!(df::Matrix{Float64}, xfs::Vector{Float64}, prob_stm::ODEProblem, n::Int, n_sv::Int, x0_vec::Vector{Float64}, tofs::Array, fix_time::Bool, method, reltol::Float64, abstol::Float64)
-    # re-make ODE problem and integrate until tofs[ix]
-    for i = 1:n-1
-        x0_stm = vcat(x0_vec[(i-1)*n_sv + 1 : i*(n_sv)], reshape(I(n_sv), (n_sv*n_sv,)))[:]
-        if fix_time == true
-            tprop = tofs[i]
-        else
-            tprop = x0_vec[n_sv*n+i]
-        end
-        _prob = remake(prob_stm; tspan=(0.0, tprop), u0=x0_stm)
-        sol = DifferentialEquations.solve(_prob, method, reltol=reltol, abstol=abstol)
-        # construct vector of propagation results
-        xfs[(i-1)*n_sv + 1 : i*(n_sv)] = sol.u[end][1:n_sv]
-        # fill in STM into DF matrix
-        df[(i-1)*n_sv+1:i*n_sv, (i-1)*n_sv+1:i*n_sv] = transpose( reshape(sol.u[end][n_sv+1:end], (n_sv,n_sv)) )
-        # if fix_time == false, fill in df/dx into DF matrix
-        duf = zeros(length(x0_stm))
-        if fix_time == false
-            _ = rhs!(duf, sol.u[end], p, sol.t[end])
-        end
-    end
+function multiple_shooting_propagate_ensemble!(df::Matrix{Float64}, xfs::Vector{Float64}, prob_stm::ODEProblem, prob_func, ensemble_method, n::Int, n_sv::Int, x0_vec::Vector{Float64}, tofs::Array, fix_time::Bool, method, reltol::Float64, abstol::Float64)
+	# solve ensemble problem
+	ensemble_prob = EnsembleProblem(prob_stm, prob_func=prob_func)
+	sim = solve(ensemble_prob, method, ensemble_method, trajectories=n-1, reltol=reltol, abstol=abstol);
+
+	# process result
+	for (i,sol) in enumerate(sim)
+		# construct vector of propagation results
+		xfs[(i-1)*n_sv + 1 : i*(n_sv)] = sol.u[end][1:n_sv]
+		# fill in STM into DF matrix
+		df[(i-1)*n_sv+1:i*n_sv, (i-1)*n_sv+1:i*n_sv] = transpose( reshape(sol.u[end][n_sv+1:end], (n_sv,n_sv)) )
+		# if fix_time == false, fill in df/dx into DF matrix
+		duf = zeros(n_sv)
+		if fix_time == false
+			_ = rhs!(duf, sol.u[end], p, sol.t[end])
+		end
+		# FIXME - append duf into DF
+	end
     return
 end
 
