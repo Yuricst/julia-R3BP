@@ -4,7 +4,7 @@ Function for computing Jacobi constant
 
 
 """
-    jacobiConstant(μ, sv)
+    jacobiConstant(μ::Float64, sv)
 
 Compute Jacobi constant
 
@@ -12,7 +12,7 @@ Compute Jacobi constant
     - `μ::Float64`: CR3BP parameter
     - `sv::Vector`: state-vector, planar or spatial
 """
-function jacobiConstant(μ, sv)
+function jacobiConstant(μ::Float64, sv)
     if length(sv)==4
         x, y, vx, vy = sv
         z, vz = 0.0, 0.0;
