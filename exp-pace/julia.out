@@ -1,0 +1,29 @@
+---------------------------------------
+Begin PBS Prologue Wed Jul  7 10:48:39 EDT 2021
+Job ID:     2287976.sched-torque.pace.gatech.edu
+User ID:    yshimane3
+Job name:   juliaTest
+Queue:      inferno
+End PBS Prologue Wed Jul  7 10:48:39 EDT 2021
+---------------------------------------
+
+Lmod is automatically replacing "intel/19.0.5" with "gcc/8.3.0".
+
+
+Due to MODULEPATH changes, the following have been reloaded:
+  1) mvapich2/2.3.2
+
+Testing on PACE...
+Done!
+---------------------------------------
+Begin PBS Epilogue Wed Jul  7 10:49:45 EDT 2021
+Job ID:     2287976.sched-torque.pace.gatech.edu
+User ID:    yshimane3
+Job name:   juliaTest
+Resources:  nodes=1:ppn=2,pmem=2gb,walltime=00:01:00,neednodes=1:ppn=2
+Rsrc Used:  cput=00:01:17,vmem=4202656kb,walltime=00:01:06,mem=1009072kb,energy_used=0
+Queue:      inferno
+Nodes:     
+atl1-1-02-010-12-r.pace.gatech.edu
+End PBS Epilogue Wed Jul  7 10:49:45 EDT 2021
+---------------------------------------
