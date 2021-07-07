@@ -38,11 +38,11 @@ end
 
 Obtain CR3BP parameters mu, lstar, tstar, soi of m2
 
-Args:
+# Arguments
     m1_naifID (str): mass of first primary
     m2_naifID (str): mass of second primary
 
-Returns:
+# Returns
     (obj): object with fields:
         mu (float): mass-parameter
         lstar (float): non-dimensional distance

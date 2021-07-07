@@ -209,7 +209,7 @@ function get_manifold(
 
     # define ϵ (linear perturbation)
     if isnothing(ϵ)
-        ϵ = assign_from_kwargs(kwargs_dict, :ϵ, scale_ϵ(μ, x0, period, stable, monodromy, y0, lstar, relative_tol_manifold, absolute_tol_manifold_km))
+        ϵ = scale_ϵ(μ, x0, period, stable, monodromy, y0, lstar, relative_tol_manifold, absolute_tol_manifold_km)
     end
 
     # decide sign of ϵ based on xdir

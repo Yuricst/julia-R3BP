@@ -7,31 +7,39 @@ using Roots
 using DifferentialEquations
 using ForwardDiff
 using Printf
+using DataFrames
 
 # basic functions for CR3BP
 include("lagrangePoints.jl")
 include("jacobiConstant.jl")
 include("equationsOfMotion.jl")
+include("lpo_stability.jl")
 
 # manifold, halo initial guess, differential correction
 include("manifold.jl")
 include("analyticalCollinearHalo.jl")
 include("differentialCorrection_singleshoot.jl")
+include("multipleshooting.jl")
+
+# LPO family handling
+include("lpo_family.jl")
 
 # defining system parameters
 include("get_gm.jl")
 include("get_semiMajorAxis.jl")
 include("get_cr3bp_param.jl")
 
-# for trajectory optimization
+# for trajectory design
 include("deltaV_transcription.jl")
 include("equationsOfMotionWithThrust.jl")
 
 # Misc
 include("unpack_kwargs.jl")
+include("plot_support.jl")
+
 
 # utility in R3BP
-export lagrangePoint
+export lagrangePoint, get_cr3bp_param
 
 # RHS
 export rhs_cr3bp_sv, rhs_cr3bp_svstm, rhs_pcr3bp_sv, rhs_pcr3bp_svstm, rhs_pcr3bp_svstm

@@ -83,6 +83,7 @@ plot(outsim, linealpha=0.4, vars=(1,2), flip=false, aspect_ratio=:equal)
 ```
 
 ### Dev-notes
+- [x] Stability for LPO
 - [x] ER3BP propagator
 - [x] BCR4BP propagator
 - [x] BCR4BP STM propagator

@@ -1,16 +1,13 @@
 """
 Function generates 3rd order approximation to periodic solution about collinear
 libration point in the CR3BP
-Yuri Shimane, 2020/04/07
 """
-
-# load packages
-using Roots
 
 
 struct Struct_out_halo_analytical
    x0
-   period
+   period::Float64
+   fullstates
 end
 
 
@@ -147,30 +144,30 @@ function halo_analytical_construct(mu::Float64, lp::Int, Az_km::Float64, lstar::
 
    # construct third-order solution
    # initialize
-   x_analytic_Lframe = zeros(length(time_tau),1);
-   y_analytic_Lframe = zeros(length(time_tau),1);
-   z_analytic_Lframe = zeros(length(time_tau),1);
-   xdot_analytic_Lframe = zeros(length(time_tau),1);
-   ydot_analytic_Lframe = zeros(length(time_tau),1);
-   zdot_analytic_Lframe = zeros(length(time_tau),1);
+   x_analytic_Lframe = zeros(length(time_tau))
+   y_analytic_Lframe = zeros(length(time_tau))
+   z_analytic_Lframe = zeros(length(time_tau))
+   xdot_analytic_Lframe = zeros(length(time_tau))
+   ydot_analytic_Lframe = zeros(length(time_tau))
+   zdot_analytic_Lframe = zeros(length(time_tau))
 
    # third order solution in L-frame (centered around libration point)
    for i in 1:length(time_tau)
       # positions in Lframe
-      x_analytic_Lframe[i,1] = a21 * Ax^2 + a22 * Az^2 - Ax*cos(lambda*time_tau[i] + phi) + (a23*Ax^2 - a24*Az^2)*cos(2*(lambda*time_tau[i] + phi)) + (a31*Ax^3 - a32*Ax*Az^2)*cos(3*(lambda*time_tau[i] + phi));
-      y_analytic_Lframe[i,1] = k*Ax*sin(lambda*time_tau[i] + phi) + (b21*Ax^2 - b22*Az^2)*sin(2*(lambda*time_tau[i] + phi)) + (b31*Ax^3 - b32*Ax*Az^2) * sin(3*(lambda*time_tau[i] + phi));
-      z_analytic_Lframe[i,1] = deltan * Az*cos(lambda*time_tau[i] + phi) + deltan*d21*Ax*Az*(cos(2*(lambda*time_tau[i] + phi)) - 3) + deltan*(d32*Az*Ax^2 - d31*Az^3)*cos(3*(lambda*time_tau[i] + phi));
+      x_analytic_Lframe[i] = a21 * Ax^2 + a22 * Az^2 - Ax*cos(lambda*time_tau[i] + phi) + (a23*Ax^2 - a24*Az^2)*cos(2*(lambda*time_tau[i] + phi)) + (a31*Ax^3 - a32*Ax*Az^2)*cos(3*(lambda*time_tau[i] + phi));
+      y_analytic_Lframe[i] = k*Ax*sin(lambda*time_tau[i] + phi) + (b21*Ax^2 - b22*Az^2)*sin(2*(lambda*time_tau[i] + phi)) + (b31*Ax^3 - b32*Ax*Az^2) * sin(3*(lambda*time_tau[i] + phi));
+      z_analytic_Lframe[i] = deltan * Az*cos(lambda*time_tau[i] + phi) + deltan*d21*Ax*Az*(cos(2*(lambda*time_tau[i] + phi)) - 3) + deltan*(d32*Az*Ax^2 - d31*Az^3)*cos(3*(lambda*time_tau[i] + phi));
 
       # velocities
-      xdot_analytic_Lframe[i,1] = ( lambda*Ax*sin(lambda*time_tau[i] + phi) + (a23*Ax^2 - a24*Az^2)*2*lambda*sin(2*(lambda*time_tau[i] + phi)) - (a31*Ax^3 - a32*Ax*Az^2)*3*lambda*sin(3*(lambda*time_tau[i] + phi)) );
-      ydot_analytic_Lframe[i,1] = k*Ax*lambda*omega*cos(lambda*time_tau[i] + phi) + (b21*Ax^2 - b22*Az^2)*2*lambda*omega*cos(2*(lambda*time_tau[i] + phi)) + (b31*Ax^3 - b32*Ax*Az^2) * 3*lambda*omega*cos(3*(lambda*time_tau[i] + phi));
-      zdot_analytic_Lframe[i,1] = ( - deltan * Az*lambda*sin(lambda*time_tau[i] + phi) - deltan*d21*Ax*Az*2*lambda*sin(2*(lambda*time_tau[i] + phi)) - deltan*(d32*Az*Ax^2 - d31*Az^3)*3*lambda*sin(3*(lambda*time_tau[i] + phi)) );
+      xdot_analytic_Lframe[i] = ( lambda*Ax*sin(lambda*time_tau[i] + phi) + (a23*Ax^2 - a24*Az^2)*2*lambda*sin(2*(lambda*time_tau[i] + phi)) - (a31*Ax^3 - a32*Ax*Az^2)*3*lambda*sin(3*(lambda*time_tau[i] + phi)) );
+      ydot_analytic_Lframe[i] = k*Ax*lambda*omega*cos(lambda*time_tau[i] + phi) + (b21*Ax^2 - b22*Az^2)*2*lambda*omega*cos(2*(lambda*time_tau[i] + phi)) + (b31*Ax^3 - b32*Ax*Az^2) * 3*lambda*omega*cos(3*(lambda*time_tau[i] + phi));
+      zdot_analytic_Lframe[i] = ( - deltan * Az*lambda*sin(lambda*time_tau[i] + phi) - deltan*d21*Ax*Az*2*lambda*sin(2*(lambda*time_tau[i] + phi)) - deltan*(d32*Az*Ax^2 - d31*Az^3)*3*lambda*sin(3*(lambda*time_tau[i] + phi)) );
    end
 
    # shift solution to synodic frame (centered around barycenter of CR3BP primary masses)
    x_analytic_synodic = gammaL * x_analytic_Lframe;
    for i in 1:length(x_analytic_synodic)
-      x_analytic_synodic[i,1] = x_analytic_synodic[i,1] + LP[lp,1];
+      x_analytic_synodic[i] = x_analytic_synodic[i] + LP[lp,1];
    end
    y_analytic_synodic = gammaL * y_analytic_Lframe;
    z_analytic_synodic = gammaL * z_analytic_Lframe;
@@ -182,9 +179,12 @@ function halo_analytical_construct(mu::Float64, lp::Int, Az_km::Float64, lstar::
    X0 = [x_analytic_synodic[1], y_analytic_synodic[1], z_analytic_synodic[1],
          xdot_analytic_synodic[1], ydot_analytic_synodic[1], zdot_analytic_synodic[1]]
 
+   # full states
+   fullstates = hcat(x_analytic_synodic, y_analytic_synodic, z_analytic_synodic,
+                     xdot_analytic_synodic, ydot_analytic_synodic, zdot_analytic_synodic, time_tau)
+
    # prepare function output
-   return Struct_out_halo_analytical(X0, T)
+   return Struct_out_halo_analytical(X0, T, fullstates)
    #T, X0, x_analytic_synodic, y_analytic_synodic, z_analytic_synodic,
    #   xdot_analytic_synodic, ydot_analytic_synodic, zdot_analytic_synodic
-
 end

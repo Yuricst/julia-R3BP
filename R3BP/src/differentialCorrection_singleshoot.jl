@@ -96,60 +96,19 @@ Single-shooting differential correction for periodic trajectory with symmetry ac
     (struct): struct with fields: x0, period, sol, flag, fiters
 """
 function ssdc_periodic_xzplane(p, x0, period0; kwargs...)
-    # ------- unpack kwargs ----- #
-    if :maxiter in keys(kwargs)
-        maxiter = kwargs[:maxiter];
-    else
-        maxiter = 15
-    end
+    # unpack kwargs
+    kwargs_dict = Dict(kwargs)
+    maxiter = assign_from_kwargs(kwargs_dict, :maxiter, 15)
+    method  = assign_from_kwargs(kwargs_dict, :method, Tsit5())
+    reltol  = assign_from_kwargs(kwargs_dict, :reltol, 1.e-12)
+    abstol  = assign_from_kwargs(kwargs_dict, :abstol, 1.e-12)
+    fix = assign_from_kwargs(kwargs_dict, :fix, "period")
 
-    if :reltol in keys(kwargs)
-        reltol = kwargs[:reltol];
-    else
-        reltol = 1e-13
-    end
-
-    if :abstol in keys(kwargs)
-        abstol = kwargs[:abstol];
-    else
-        abstol = 1e-13
-    end
-
-    if :method in keys(kwargs)
-        method = kwargs[:method];
-    else
-        method = Tsit5()
-    end
-
-    if :fix in keys(kwargs)
-        fix = kwargs[:fix]
-    else
-        fix = "period"
-    end
-
-    if :tolDC in keys(kwargs)
-        tolDC = kwargs[:tolDC]
-    else
-        tolDC = 1e-12
-    end
-
-    if :system in keys(kwargs)
-        system = kwargs[:system]
-    else
-        system = "cr3bp"
-    end
-
-    if :verbosity in keys(kwargs)
-        verbosity = kwargs[:verbosity]
-    else
-        verbosity = false
-    end
-
-    if :stm_option in keys(kwargs)
-        stm_option = kwargs[:stm_option]
-    else
-        stm_option = "analytical"
-    end
+    tolDC = assign_from_kwargs(kwargs_dict, :tolDC, 1.0e-12)
+    system = assign_from_kwargs(kwargs_dict, :system, "cr3bp")
+    verbose = assign_from_kwargs(kwargs_dict, :verbose, false)
+    stm_option = assign_from_kwargs(kwargs_dict, :stm_option, "analytical")
+    maxiter = assign_from_kwargs(kwargs_dict, :maxiter, 15)
 
     # unpack mu
     mu = p[1]
@@ -297,7 +256,7 @@ function ssdc_periodic_xzplane(p, x0, period0; kwargs...)
             flag = 1
             break
         else
-            if verbosity==true
+            if verbose==true
                 @printf("Iteration %i: residual: %s\n", idx, norm(ferr))
             end
             idx += 1
