@@ -1,0 +1,13 @@
+#PBS -N juliaTest
+#PBS -A [Account]
+#PBS -l nodes=1:ppn=2
+#PBS -l pmem=2gb
+#PBS -l walltime=1:00
+#PBS -q inferno
+#PBS -j oe
+#PBS -o julia.out
+
+cd $PBS_O_WORKDIR
+module load gcc/8.3.0
+module load julia/1.6.1
+julia -p 2 test.jl
