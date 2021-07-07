@@ -147,7 +147,7 @@ end
 """
     rhs_pcr3bp_sv!(du,u,p,t)
 
-Right-hand side expression for state-vector in CR3BP
+Right-hand side expression for state-vector in PCR3BP
 
 # Arguments
     - `du`: cache array of duative of state-vector
@@ -175,7 +175,7 @@ end
 """
     rhs_pcr3bp_svstm!(du,u,p,t)
 
-Right-hand side expression for state-vector and STM in CR3BP
+Right-hand side expression for state-vector and STM in PCR3BP
 
 # Arguments
     - `du`: cache array of duative of state-vector
