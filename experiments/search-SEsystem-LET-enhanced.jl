@@ -162,7 +162,7 @@ function main(params, thetas, ras, verbose=false)
 			if verbose==true
 				print("\rproblem # $i / $nic")
 			end
-		    remake(prob, u0=x0s[i], tspan=(0.0, 2.0tfs[i]))
+		    remake(prob, u0=vcat(x0s[i], m0), tspan=(0.0, 2.0tfs[i]))
 		end
 
 		ensemble_prob = EnsembleProblem(prob, prob_func=prob_func)
