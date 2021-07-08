@@ -6,17 +6,22 @@ Function associated with manifold
 # -------------------------------------------------------------------------------- #
 # methods associated with STM
 """
-    get_stm(sol, idx::Int)
+    get_stm(sol::ODESolution, nsv::Int)
 
-Extract STM from solution of ODEProblem
+Extract STM from solution of ODEProblem at final index
 """
-function get_stm(sol::ODESolution, idx::Int)
-    if length(sol.u[1])==20
-        stm = reshape(sol.u[idx][4+1:end], (4, 4))'
-    elseif length(sol.u[1])==42
-        stm = reshape(sol.u[idx][6+1:end], (6, 6))'
-    end
-    return stm
+function get_stm(sol::ODESolution, nsv::Int)
+    return transpose( reshape(sol.u[end][nsv+1:end], (nsv, nsv)) )
+end
+
+
+"""
+    get_stm(sol::ODESolution, nsv::Int, idx::Int)
+
+Extract STM from solution of ODEProblem at index=idx
+"""
+function get_stm(sol::ODESolution, nsv::Int, idx::Int)
+    return transpose( reshape(sol.u[idx][nsv+1:end], (nsv, nsv)) )
 end
 
 
@@ -185,25 +190,27 @@ function get_manifold(
     end
 
     # ---------- propagate c0 by one full period with STM ---------- #
-    if length(x0)==4
-        #x0_stm = vcat(x0, [1 0 0 0  0 1 0 0  0 0 1 0  0 0 0 1]);
-        x0_stm = vcat(x0iter, reshape(I(4), (16,)))[:]
-        prob_lpo = ODEProblem(rhs_pcr3bp_svstm!, x0_stm, period, (μ));
-    elseif length(x0)==6
-        #x0_stm = vcat(x0, [1 0 0 0 0 0  0 1 0 0 0 0  0 0 1 0 0 0  0 0 0 1 0 0  0 0 0 0 1 0  0 0 0 0 0 1]);
-        x0_stm = vcat(x0, reshape(I(6), (36,)))[:]
-        prob_lpo = ODEProblem(rhs_cr3bp_svstm!, x0_stm, period, (μ));
+    nsv = length(x0)
+    if nsv==4
+        rhs! = rhs_pcr3bp_svstm!
+    elseif nsv==6
+        rhs! = rhs_cr3bp_svstm!
     else
         error("x0 should be length 4 or 6")
     end
+
+    # initialize problem
+    x0_stm = vcat(x0, reshape(I(nsv), (nsv^2,)))[:]
+    prob_lpo = ODEProblem(rhs!, x0_stm, period, (μ));
+
     ts_lpo = LinRange(0, period, n+1)
-    sol = solve(prob_lpo, method, reltol=reltol, abstol=abstol, saveat=ts_lpo);
+    sol = solve(prob_lpo, method, reltol=reltol, abstol=abstol, saveat=ts_lpo)
 
     # get monodromy matrix (careful of order from reshape function!)
-    monodromy = reshape(sol.u[end][length(x0)+1:end], (length(x0),length(x0)))';
+    monodromy = get_stm(sol, nsv)
 
     # get eigenvectors at initial state
-    y0 = get_eigenvector(monodromy, stable);
+    y0 = get_eigenvector(monodromy, stable)
 
     # define ϵ (linear perturbation)
     if isnothing(ϵ)
@@ -226,9 +233,7 @@ function get_manifold(
     else
         error("xdir should be \"positive\" or \"negative\"")
     end
-    if verbosity > 0
-        @printf("Using linear perturbation ϵ = %s \n", ϵ_corr)
-    end
+    __print_verbosity("Using linear perturbation ϵ = $ϵ \n", verbosity, 0)
 
     # ---------- construct and append initial condition ---------- #
     x0_ptrbs = []

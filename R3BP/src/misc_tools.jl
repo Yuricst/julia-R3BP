@@ -33,6 +33,19 @@ end
 
 
 """
+    __print_verbosity(message::String, verbosity::Int, threshold::Int)
+
+Print message if verbosity > threshold
+"""
+function __print_verbosity(message::String, verbosity::Int, threshold::Int)
+    if verbosity > threshold
+        println(message)
+    end
+end
+
+
+
+"""
 ODE settings class for use with DifferentialEquations
 """
 struct ODESettings
