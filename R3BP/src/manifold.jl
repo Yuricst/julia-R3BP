@@ -60,12 +60,13 @@ end
 
 Get eigenvectors from monodromy matrix
 """
-function get_eigenvector(monodromy, stable::Bool=true)
+function get_eigenvector(monodromy, stable::Bool, verbosity::Int=0)
     λs = eigvals(monodromy)
     vs = eigvecs(monodromy)
     eig_unstb, eig_stb, v_unstb, v_stb = get_stable_unstable_eigvecs(λs, vs)
-    @printf("Linear stability ν = %1.4f \n", 0.5*(abs(eig_unstb) + abs(eig_stb)))
-    @printf("Eigenvalue unstable: %1.4f, stable: %1.4f, product: %1.4f\n", eig_unstb, eig_stb, eig_unstb*eig_stb)
+    nu = stability(eig_unstb, eig_stb)
+    __print_verbosity("Linear stability ν = $nu", verbosity, 0)
+    #@printf("Eigenvalue unstable: %1.4f, stable: %1.4f, product: %1.4f\n", eig_unstb, eig_stb, eig_unstb*eig_stb)
     if stable==true
         return v_stb
     else
@@ -192,16 +193,18 @@ function get_manifold(
     # ---------- propagate c0 by one full period with STM ---------- #
     nsv = length(x0)
     if nsv==4
-        rhs! = rhs_pcr3bp_svstm!
+        rhs!     = rhs_pcr3bp_sv!
+        rhs_stm! = rhs_pcr3bp_svstm!
     elseif nsv==6
-        rhs! = rhs_cr3bp_svstm!
+        rhs!     = rhs_cr3bp_sv!
+        rhs_stm! = rhs_cr3bp_svstm!
     else
         error("x0 should be length 4 or 6")
     end
 
     # initialize problem
     x0_stm = vcat(x0, reshape(I(nsv), (nsv^2,)))[:]
-    prob_lpo = ODEProblem(rhs!, x0_stm, period, (μ));
+    prob_lpo = ODEProblem(rhs_stm!, x0_stm, period, (μ));
 
     ts_lpo = LinRange(0, period, n+1)
     sol = solve(prob_lpo, method, reltol=reltol, abstol=abstol, saveat=ts_lpo)
@@ -210,7 +213,7 @@ function get_manifold(
     monodromy = get_stm(sol, nsv)
 
     # get eigenvectors at initial state
-    y0 = get_eigenvector(monodromy, stable)
+    y0 = get_eigenvector(monodromy, stable, verbosity)
 
     # define ϵ (linear perturbation)
     if isnothing(ϵ)
@@ -237,21 +240,17 @@ function get_manifold(
 
     # ---------- construct and append initial condition ---------- #
     x0_ptrbs = []
+    #x0_ptb_vec = zeros(1:n*nsv)
     for idx_x0 in 1:n
         # map eigenvector (y = stm*y0)
-        y_transcribed = reshape(sol.u[idx_x0][length(x0)+1:end], (length(x0), length(x0)))' * reshape(y0, (length(x0), 1));
-
-        # construct perturbed state
-        x0_ptrb   = sol.u[idx_x0][1:length(x0)] + ϵ_corr*y_transcribed/norm(y_transcribed);
+        y_transcribed = get_stm(sol, nsv, idx_x0) * y0
+        # construct linearly perturbed state
+        x0_ptrb   = sol.u[idx_x0][1:nsv] + ϵ_corr*y_transcribed/norm(y_transcribed);
         push!(x0_ptrbs, x0_ptrb)
     end
 
     # define base ODE problem for manifold branch
-    if length(x0)==4
-        prob_branch = ODEProblem(rhs_pcr3bp_sv!, reshape(x0_ptrbs[1],(1,4)), tf, (μ));
-    elseif length(x0)==6
-        prob_branch = ODEProblem(rhs_cr3bp_sv!, reshape(x0_ptrbs[1],(1,6)), tf, (μ));
-    end
+    prob_branch = ODEProblem(rhs!, x0_ptrbs[1], tf, (μ));
 
     # ---------- ensemble siμlation ---------- #
     function prob_func(prob, i, repeat)
@@ -272,7 +271,6 @@ end
 
 # ----------------------------------------------------------------------------------- #
 # function for extracting poincare section
-# solution output
 struct Struct_out_PoincareSection
     u
     t
@@ -284,7 +282,7 @@ end
 
 Get manifold poincare section
 """
-function get_manifold_ps(sim_manifold)
+function get_manifold_ps(sim_manifold::EnsembleSolution)
     # initialize array of poincare section
     t_ps = zeros(length(sim_manifold))
     x_ps, y_ps   = zeros(length(sim_manifold)), zeros(length(sim_manifold))
