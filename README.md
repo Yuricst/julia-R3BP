@@ -82,6 +82,22 @@ outsim = R3BP.get_manifold(mu, X0, T, tf, stability;
 plot(outsim, linealpha=0.4, vars=(1,2), flip=false, aspect_ratio=:equal)
 ```
 
+#### Multiple shooting
+
+First, construct a list of `n` nodes stored in `x0s` and `n-1` time-of-flights stored in `tofs`; then, call
+
+```julia
+prob_stm = ODEProblem(R3BP.rhs_cr3bp_svstm!, vcat(guess0.x0, reshape(I(6), (36,)))[:], guess0.period, (mu));
+    
+x0_conv, tof_conv, convflag = R3BP.multiple_shooting(prob_stm, x0s, tofs, 1.0e-12;
+    periodic=true, fix_time=false, rhs=R3BP.rhs_cr3bp_svstm!, p=(mu))
+```
+    
+A periodic orbit may be constructed using the multiple-shooting algorithm via 
+<p align="center">
+  <img src="./etc/multiple_shooting_periodic_example.png" width="750" title="hover text">
+</p>
+
 ### Dev-notes
 - [x] Stability for LPO
 - [x] ER3BP propagator
