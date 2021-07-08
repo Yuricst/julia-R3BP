@@ -162,7 +162,7 @@ function get_manifold(
     kwargs_dict = Dict(kwargs)
     stable   = assign_from_kwargs(kwargs_dict, :stable, true)
     xdir     = assign_from_kwargs(kwargs_dict, :xdir, "positive")
-    n        = assign_from_kwargs(kwargs_dict, :n, 100)
+    n        = assign_from_kwargs(kwargs_dict, :n, 50)
     callback = assign_from_kwargs(kwargs_dict, :callback, nothing)
     lstar    = assign_from_kwargs(kwargs_dict, :lstar, 1.0)
     relative_tol_manifold    = assign_from_kwargs(kwargs_dict, :relative_tol_manifold, 0.1)
