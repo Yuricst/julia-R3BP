@@ -39,9 +39,9 @@ stability = true;
 tf = -10.0
 
 ## generate manifolds
-outsim = R3BP.get_manifold(mu, X0, T, tf, stability; lstar=params.lstar, callback=nothing, xdir="negative");
+outsim, WarmStart= R3BP.get_manifold(mu, X0, T, tf, stability; lstar=params.lstar, callback=nothing, xdir="negative");
 
 ## create plot
 display(plot(outsim, linealpha=0.4, vars=(1,2), flip=false, aspect_ratio=:equal, size=(800,650), c=:orangered,
      frame_style=:box, gridalpha=0.4, xlabel="x", ylabel="y"))
- println("Done!")
+println("Done!")

@@ -141,7 +141,16 @@ function scale_ϵ(μ::Float64, x0, period::Float64, stable::Bool, monodromy, y0,
 end
 
 
-## manifold function
+## manifold functions
+
+# struct WarmManifold
+#     x0_ptb_vec::Array{Float64,1}
+#     n::Int
+#     nsv::Int
+#     μ::Float64
+#     rhs!
+# end
+
 """
     get_manifold(
             μ::Float64,
@@ -154,6 +163,9 @@ end
 Function to obtain manifold of LPO
 
 # Arguments
+
+# Returns
+    `EnsembleSolution`: ODE solution of `n` discrete manifold branches
 """
 function get_manifold(
             μ::Float64,
@@ -164,17 +176,22 @@ function get_manifold(
             kwargs...)
     # ---------- extract arguments ---------- #
     kwargs_dict = Dict(kwargs)
-    stable   = assign_from_kwargs(kwargs_dict, :stable, true)
+    # main manifold options
     xdir     = assign_from_kwargs(kwargs_dict, :xdir, "positive")
     n        = assign_from_kwargs(kwargs_dict, :n, 50)
     callback = assign_from_kwargs(kwargs_dict, :callback, nothing)
+    ϵ      = assign_from_kwargs(kwargs_dict, :ϵ, nothing)
     lstar    = assign_from_kwargs(kwargs_dict, :lstar, 1.0)
     relative_tol_manifold    = assign_from_kwargs(kwargs_dict, :relative_tol_manifold, 0.1)
     absolute_tol_manifold_km = assign_from_kwargs(kwargs_dict, :absolute_tol_manifold_km, 100.0)
+
+    # ODE settings
     reltol = assign_from_kwargs(kwargs_dict, :reltol, 1.e-12)
     abstol = assign_from_kwargs(kwargs_dict, :abstol, 1.e-12)
     method = assign_from_kwargs(kwargs_dict, :method, Tsit5())
-    ϵ      = assign_from_kwargs(kwargs_dict, :ϵ, nothing)
+
+    # warm-start options
+    x0_ptb_vec = assign_from_kwargs(kwargs_dict, :wm, nothing)
 
     if :verbosity in keys(kwargs)
         verbosity = kwargs[:verbosity]
@@ -182,13 +199,8 @@ function get_manifold(
         verbosity = 0
     end
 
-    if verbosity > 0
-        println("========== Manifold Setting ==========")
-        print("xdir: ")
-        println(xdir)
-        print("Stable: ")
-        println(stable)
-    end
+    __print_verbosity("========== Manifold Setting ==========", verbosity, 0)
+    __print_verbosity("   xdir: $xdir\n   Stable: $stable", verbosity, 0)
 
     # ---------- propagate c0 by one full period with STM ---------- #
     nsv = length(x0)
@@ -199,73 +211,141 @@ function get_manifold(
         rhs!     = rhs_cr3bp_sv!
         rhs_stm! = rhs_cr3bp_svstm!
     else
-        error("x0 should be length 4 or 6")
+        error("x0 should be length 4 or 6!")
     end
 
-    # initialize problem
-    x0_stm = vcat(x0, reshape(I(nsv), (nsv^2,)))[:]
-    prob_lpo = ODEProblem(rhs_stm!, x0_stm, period, (μ));
+    # if no WarmManifold is provided, compute parameters
+    if isnothing(x0_ptb_vec) == true
 
-    ts_lpo = LinRange(0, period, n+1)
-    sol = solve(prob_lpo, method, reltol=reltol, abstol=abstol, saveat=ts_lpo)
+        # obtain STM history
+        x0_stm = vcat(x0, reshape(I(nsv), (nsv^2,)))[:]
+        prob_lpo = ODEProblem(rhs_stm!, x0_stm, period, (μ))
+        sol = solve(prob_lpo, method, reltol=reltol, abstol=abstol, saveat=LinRange(0, period, n+1))
 
-    # get monodromy matrix (careful of order from reshape function!)
-    monodromy = get_stm(sol, nsv)
+        # get monodromy matrix
+        monodromy = get_stm(sol, nsv)
 
-    # get eigenvectors at initial state
-    y0 = get_eigenvector(monodromy, stable, verbosity)
+        # get eigenvectors at initial state
+        y0 = get_eigenvector(monodromy, stable, verbosity)
 
-    # define ϵ (linear perturbation)
-    if isnothing(ϵ)
-        ϵ = scale_ϵ(μ, x0, period, stable, monodromy, y0, lstar, relative_tol_manifold, absolute_tol_manifold_km)
-    end
-
-    # decide sign of ϵ based on xdir
-    if cmp(xdir, "positive")==0
-        if y0[1] < 0.0
-            ϵ_corr = -abs(ϵ)
-        else
-            ϵ_corr =  abs(ϵ)
+        # define ϵ (linear perturbation)
+        if isnothing(ϵ)
+            ϵ = scale_ϵ(μ, x0, period, stable, monodromy, y0, lstar, relative_tol_manifold, absolute_tol_manifold_km)
         end
-    elseif cmp(xdir, "negative")==0
-        if y0[1] > 0.0
-            ϵ_corr = -abs(ϵ)
+        # decide sign of ϵ based on xdir
+        if cmp(xdir, "positive")==0
+            if y0[1] < 0.0
+                ϵ_corr = -abs(ϵ)
+            else
+                ϵ_corr =  abs(ϵ)
+            end
+        elseif cmp(xdir, "negative")==0
+            if y0[1] > 0.0
+                ϵ_corr = -abs(ϵ)
+            else
+                ϵ_corr =  abs(ϵ)
+            end
         else
-            ϵ_corr =  abs(ϵ)
+            error("xdir should be \"positive\" or \"negative\"")
+        end
+        __print_verbosity("Using linear perturbation ϵ = $ϵ", verbosity, 0)
+
+        # ---------- construct and append initial condition ---------- #
+        x0_ptb_vec = zeros(n*nsv)
+        for i in 1:n
+            # map eigenvector (y = stm*y0)
+            y_transcribed = get_stm(sol, nsv, i) * y0
+            # construct linearly perturbed state
+            x0_ptb_vec[1+(i-1)*nsv : i*nsv] = sol.u[i][1:nsv] + ϵ_corr*y_transcribed/norm(y_transcribed)
         end
     else
-        error("xdir should be \"positive\" or \"negative\"")
-    end
-    __print_verbosity("Using linear perturbation ϵ = $ϵ \n", verbosity, 0)
-
-    # ---------- construct and append initial condition ---------- #
-    x0_ptrbs = []
-    #x0_ptb_vec = zeros(1:n*nsv)
-    for idx_x0 in 1:n
-        # map eigenvector (y = stm*y0)
-        y_transcribed = get_stm(sol, nsv, idx_x0) * y0
-        # construct linearly perturbed state
-        x0_ptrb   = sol.u[idx_x0][1:nsv] + ϵ_corr*y_transcribed/norm(y_transcribed);
-        push!(x0_ptrbs, x0_ptrb)
+        __print_verbosity("Warm-starting EnsembleProblem", verbosity, 0)
     end
 
     # define base ODE problem for manifold branch
-    prob_branch = ODEProblem(rhs!, x0_ptrbs[1], tf, (μ));
+    prob_branch = ODEProblem(rhs!, x0_ptb_vec[1:nsv], tf, (μ))
 
-    # ---------- ensemble siμlation ---------- #
+    # define remake function
     function prob_func(prob, i, repeat)
-        remake(prob, u0=reshape(x0_ptrbs[i],(1,length(x0))))
+        remake(prob, u0=x0_ptb_vec[1+(i-1)*nsv : i*nsv])
     end
 
+    # construct Ensemble Problem
     ensemble_prob = EnsembleProblem(prob_branch, prob_func=prob_func)
-    if isnothing(callback)
-        #println("No callback function")
-        sim = solve(ensemble_prob, method, EnsembleThreads(), trajectories=n, reltol=reltol, abstol=abstol)
+
+    # return output of EnsembleProblem
+    return solve(ensemble_prob, method, EnsembleThreads(), trajectories=n, callback=callback, method=method, reltol=reltol, abstol=abstol), x0_ptb_vec
+end
+
+
+
+"""
+    get_manifold(
+        x0_ptb_vec::Array{Float64,1},
+        μ::Float64,
+        nsv::Int,
+        tf::Float64,
+        kwargs...)
+
+Function to obtain manifold of LPO.
+This dispatch utilizes pre-computed perturbation x's.
+
+# Arguments
+
+# Returns
+    `EnsembleSolution`: ODE solution of `n` discrete manifold branches
+"""
+function get_manifold(
+            x0_ptb_vec::Array{Float64,1},
+            μ::Float64,
+            nsv::Int,
+            tf::Float64,
+            kwargs...)
+    # ---------- extract arguments ---------- #
+    kwargs_dict = Dict(kwargs)
+    # main manifold options
+    callback = assign_from_kwargs(kwargs_dict, :callback, nothing)
+    relative_tol_manifold    = assign_from_kwargs(kwargs_dict, :relative_tol_manifold, 0.1)
+    absolute_tol_manifold_km = assign_from_kwargs(kwargs_dict, :absolute_tol_manifold_km, 100.0)
+
+    # ODE settings
+    reltol = assign_from_kwargs(kwargs_dict, :reltol, 1.e-12)
+    abstol = assign_from_kwargs(kwargs_dict, :abstol, 1.e-12)
+    method = assign_from_kwargs(kwargs_dict, :method, Tsit5())
+
+    if :verbosity in keys(kwargs)
+        verbosity = kwargs[:verbosity]
     else
-        #println("Using callback function")
-        sim = solve(ensemble_prob, method, EnsembleThreads(), trajectories=n, callback=callback, reltol=reltol, abstol=abstol)
+        verbosity = 0
     end
-    return sim
+
+    __print_verbosity("Warm-starting EnsembleProblem", verbosity, 0)
+
+    # get problem rhs function and dimension
+    if nsv==4
+        rhs!     = rhs_pcr3bp_sv!
+        rhs_stm! = rhs_pcr3bp_svstm!
+    elseif nsv==6
+        rhs!     = rhs_cr3bp_sv!
+        rhs_stm! = rhs_cr3bp_svstm!
+    else
+        error("x0 should be length 4 or 6!")
+    end
+    n = length(x0_ptb_vec) ÷ nsv
+
+    # define base ODE problem for manifold branch
+    prob_branch = ODEProblem(rhs!, x0_ptb_vec[1:nsv], tf, (μ))
+
+    # define remake function
+    function prob_func(prob, i, repeat)
+        remake(prob, u0=x0_ptb_vec[1+(i-1)*nsv : i*nsv])
+    end
+
+    # construct Ensemble Problem
+    ensemble_prob = EnsembleProblem(prob_branch, prob_func=prob_func)
+
+    # return output of EnsembleProblem
+    return solve(ensemble_prob, method, EnsembleThreads(), trajectories=n, callback=callback, method=method, reltol=reltol, abstol=abstol), x0_ptb_vec
 end
 
 
