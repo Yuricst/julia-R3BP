@@ -163,6 +163,12 @@ end
 Function to obtain manifold of LPO
 
 # Arguments
+    - `μ::Float64`:: R3BP parameter
+    - `x0::Array`: LPO state
+    - `period::Float64`: LPO period
+    - `tf::Float64`: time of flight of manifold
+    - `stable::Bool`: true for stable manifold, false for unstable manifold
+    - `xdir::String`: direction of manifold, "positive" or "negative" along x-axis
 
 # Returns
     `EnsembleSolution`: ODE solution of `n` discrete manifold branches
@@ -184,6 +190,7 @@ function get_manifold(
     lstar    = assign_from_kwargs(kwargs_dict, :lstar, 1.0)
     relative_tol_manifold    = assign_from_kwargs(kwargs_dict, :relative_tol_manifold, 0.1)
     absolute_tol_manifold_km = assign_from_kwargs(kwargs_dict, :absolute_tol_manifold_km, 100.0)
+    verbosity = assign_from_kwargs(kwargs_dict, :verbosity, 0)
 
     # ODE settings
     reltol = assign_from_kwargs(kwargs_dict, :reltol, 1.e-12)
@@ -192,12 +199,6 @@ function get_manifold(
 
     # warm-start options
     x0_ptb_vec = assign_from_kwargs(kwargs_dict, :wm, nothing)
-
-    if :verbosity in keys(kwargs)
-        verbosity = kwargs[:verbosity]
-    else
-        verbosity = 0
-    end
 
     __print_verbosity("========== Manifold Setting ==========", verbosity, 0)
     __print_verbosity("   xdir: $xdir\n   Stable: $stable", verbosity, 0)
@@ -291,6 +292,10 @@ Function to obtain manifold of LPO.
 This dispatch utilizes pre-computed perturbation x's.
 
 # Arguments
+    - `x0_ptb_vec::Array{Float64,1}`: array of branch-points x0's, length (num. of branches)*(state-vector length)
+    - `μ::Float64`:: R3BP parameter
+    - `nsv::Int`: number of elements in state-vector
+    - `tf::Float64`: time of flight of manifold
 
 # Returns
     `EnsembleSolution`: ODE solution of `n` discrete manifold branches
@@ -305,19 +310,11 @@ function get_manifold(
     kwargs_dict = Dict(kwargs)
     # main manifold options
     callback = assign_from_kwargs(kwargs_dict, :callback, nothing)
-    relative_tol_manifold    = assign_from_kwargs(kwargs_dict, :relative_tol_manifold, 0.1)
-    absolute_tol_manifold_km = assign_from_kwargs(kwargs_dict, :absolute_tol_manifold_km, 100.0)
-
     # ODE settings
     reltol = assign_from_kwargs(kwargs_dict, :reltol, 1.e-12)
     abstol = assign_from_kwargs(kwargs_dict, :abstol, 1.e-12)
     method = assign_from_kwargs(kwargs_dict, :method, Tsit5())
-
-    if :verbosity in keys(kwargs)
-        verbosity = kwargs[:verbosity]
-    else
-        verbosity = 0
-    end
+    verbosity = assign_from_kwargs(kwargs_dict, :verbosity, 0)
 
     __print_verbosity("Warm-starting EnsembleProblem", verbosity, 0)
 
