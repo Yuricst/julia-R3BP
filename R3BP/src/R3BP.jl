@@ -5,6 +5,7 @@ module R3BP
 
 using Roots
 using DifferentialEquations
+using DifferentialEquations.EnsembleAnalysis
 using ForwardDiff
 using Printf
 using DataFrames
