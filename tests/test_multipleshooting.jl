@@ -33,7 +33,7 @@ guess0 = R3BP.halo_analytical_construct(CR3BP_param.mu, lp, Az_km, CR3BP_param.l
 # number of data in initial guess array
 n_data, _ = size(guess0.fullstates)
 # number of nodes to use
-n = 5
+n = 6
 # get index to extract from 3rd order initial guess state-history
 skip_idx = Int(floor(500/(n-1)))
 extract_idx = []
@@ -72,15 +72,22 @@ solig = R3BP.sol_to_arrays(sol);   # obtain state-history as array for plotting
 
 
 ## Run all setting combinations of multiple shooting
-tolDC = 1.e-12   # tolerance to be achieved by multiple-shooting algorithm
-x0_conv, tof_conv = R3BP.multiple_shooting(prob_stm, x0s, tofs, tolDC;
-    periodic=true, fix_time=false, use_ensemble=true, rhs=R3BP.rhs_cr3bp_svstm!, p=p,
-    maxiter=10, reltol=reltol, abstol=abstol, method=method);
+tolDC = 1.e-12  # tolerance to be achieved by multiple-shooting algorithm
+# x0_conv, tof_conv, convflag = R3BP.multiple_shooting(prob_stm, x0s, tofs, tolDC;
+#     periodic=true, fix_time=false, fix_x0=false, fix_xf=false,
+#     use_ensemble=false, rhs=R3BP.rhs_cr3bp_svstm!, p=p,
+#     maxiter=10, reltol=reltol, abstol=abstol, method=method)
+
+x0_conv, tof_conv, convflag = R3BP.multiple_shooting(prob_stm, x0s, tofs, tolDC;
+    periodic=true, fix_time=false, fix_x0=false, fix_xf=false,
+    use_ensemble=false, rhs=R3BP.rhs_cr3bp_svstm!, p=p,
+    maxiter=8, reltol=reltol, abstol=abstol, method=method)
 
 # propagate converged result of multiple-shooting
 prob = ODEProblem(R3BP.rhs_cr3bp_sv!, x0_conv[1:6], sum(tof_conv), p)
-sol = solve(prob, method, reltol=reltol, abstol=abstol, use_ensemble=true);
+sol = solve(prob, method, reltol=reltol, abstol=abstol, use_ensemble=true)
 solmsdc = R3BP.sol_to_arrays(sol.u);   # obtain state-history as array for plotting
+
 
 ## Benchmarking without / with ensemble
 # println("\n*** Benchmarking without ensemble ***")
@@ -103,8 +110,10 @@ function get_plot(idx1, idx2, aspect_ratio=:equal)
 
     # plot nodes used by multiple-shooting algorithm
     for i = 1:n
+        scatter!(ptraj, [x0s[i][idx1]], [x0s[i][idx2]],
+            label="Initial node $i", marker=(:circle, 3.5, 3.5))
         scatter!(ptraj, [x0_conv[(i-1)*6+1:6i][idx1]], [x0_conv[(i-1)*6+1:6i][idx2]],
-            label="node $i", marker=(:cross, 3.5, 3.5))
+            label="Final node $i", marker=(:cross, 3.5, 3.5))
     end
     return ptraj
 end
