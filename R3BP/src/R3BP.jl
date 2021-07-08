@@ -5,9 +5,15 @@ module R3BP
 
 using Roots
 using DifferentialEquations
+using DifferentialEquations.EnsembleAnalysis
 using ForwardDiff
 using Printf
 using DataFrames
+
+# defining system parameters
+include("get_gm.jl")
+include("get_semiMajorAxis.jl")
+include("get_cr3bp_param.jl")
 
 # basic functions for CR3BP
 include("lagrangePoints.jl")
@@ -15,26 +21,21 @@ include("jacobiConstant.jl")
 include("equationsOfMotion.jl")
 include("lpo_stability.jl")
 
-# manifold, halo initial guess, differential correction
+# LPO & manifold
+include("lpo_family.jl")
 include("manifold.jl")
 include("analyticalCollinearHalo.jl")
-include("differentialCorrection_singleshoot.jl")
-include("multipleshooting.jl")
 
-# LPO family handling
-include("lpo_family.jl")
+# differential correction
+include("differential_correction/differentialCorrection_singleshoot.jl")
+include("differential_correction/multipleshooting.jl")
 
-# defining system parameters
-include("get_gm.jl")
-include("get_semiMajorAxis.jl")
-include("get_cr3bp_param.jl")
-
-# for trajectory design
+# equations of motion for trajectory design
 include("deltaV_transcription.jl")
 include("equationsOfMotionWithThrust.jl")
 
-# Misc
-include("unpack_kwargs.jl")
+# miscellaneous
+include("misc_tools.jl")
 include("plot_support.jl")
 
 
@@ -49,5 +50,9 @@ export get_stm, scale_ϵ, get_manifold
 
 # differential correction
 export halo_analytical_construct, ssdc_periodic_xzplane
+export multiple_shooting
+
+# miscellaneous
+export sol_to_arrays
 
 end

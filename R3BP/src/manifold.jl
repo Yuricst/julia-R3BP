@@ -10,7 +10,7 @@ Function associated with manifold
 
 Extract STM from solution of ODEProblem
 """
-function get_stm(sol, idx::Int)
+function get_stm(sol::ODESolution, idx::Int)
     if length(sol.u[1])==20
         stm = reshape(sol.u[idx][4+1:end], (4, 4))'
     elseif length(sol.u[1])==42
@@ -70,16 +70,14 @@ end
 
 
 """
-    scale_ϵ(μ, x0, period, stable, monodromy, y0, lstar::Float64,
-    relative_tol_manifold::Float64=0.1, absolute_tol_manifold_km::Float64=100.0)
+    scale_ϵ(μ::Float64, x0, period::Float64, stable::Bool, monodromy, y0, lstar::Float64, relative_tol_manifold::Float64=0.1, absolute_tol_manifold_km::Float64=100.0)
 
 Obtain linear perturbation ϵ magnitude for manifolds
 
 # Arguments
     - `μ::Float64`: CR3BP parameter
 """
-function scale_ϵ(μ, x0, period, stable, monodromy, y0, lstar::Float64,
-    relative_tol_manifold::Float64=0.1, absolute_tol_manifold_km::Float64=100.0)
+function scale_ϵ(μ::Float64, x0, period::Float64, stable::Bool, monodromy, y0, lstar::Float64, relative_tol_manifold::Float64=0.1, absolute_tol_manifold_km::Float64=100.0)
     if length(x0)==4
         idx_pos_last = 2
     elseif length(x0)==6

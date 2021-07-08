@@ -1,10 +1,6 @@
 """
-Single shooting differential correction
+Single shooting differential correction algorithm for periodic orbits in R3BP systems
 """
-
-using DifferentialEquations
-using LinearAlgebra
-using Printf
 
 
 # -------------------------------------------------------------------------------------------- #
@@ -38,6 +34,7 @@ end
 
 """
 Right-hand side expression for state-vector in CR3BP
+
 Input:
     du : cache array of derivative of state-vector
     u : state-vector
@@ -66,9 +63,9 @@ end
 # single-shooting differnetial correction
 struct Struct_out_ssdc
     x0
-    period
-    sol
-    flag
+    period::Float64
+    sol::ODESolution
+    flag::Int
     fiters
 end
 
@@ -98,17 +95,17 @@ Single-shooting differential correction for periodic trajectory with symmetry ac
 function ssdc_periodic_xzplane(p, x0, period0; kwargs...)
     # unpack kwargs
     kwargs_dict = Dict(kwargs)
-    maxiter = assign_from_kwargs(kwargs_dict, :maxiter, 15)
+    maxiter = assign_from_kwargs(kwargs_dict, :maxiter, 15, Int)
     method  = assign_from_kwargs(kwargs_dict, :method, Tsit5())
-    reltol  = assign_from_kwargs(kwargs_dict, :reltol, 1.e-12)
-    abstol  = assign_from_kwargs(kwargs_dict, :abstol, 1.e-12)
-    fix = assign_from_kwargs(kwargs_dict, :fix, "period")
+    reltol  = assign_from_kwargs(kwargs_dict, :reltol, 1.e-12, Float64)
+    abstol  = assign_from_kwargs(kwargs_dict, :abstol, 1.e-12, Float64)
+    fix     = assign_from_kwargs(kwargs_dict, :fix, "period", String)
 
-    tolDC = assign_from_kwargs(kwargs_dict, :tolDC, 1.0e-12)
-    system = assign_from_kwargs(kwargs_dict, :system, "cr3bp")
-    verbose = assign_from_kwargs(kwargs_dict, :verbose, false)
-    stm_option = assign_from_kwargs(kwargs_dict, :stm_option, "analytical")
-    maxiter = assign_from_kwargs(kwargs_dict, :maxiter, 15)
+    tolDC      = assign_from_kwargs(kwargs_dict, :tolDC, 1.0e-12, Float64)
+    system     = assign_from_kwargs(kwargs_dict, :system, "cr3bp", String)
+    verbose    = assign_from_kwargs(kwargs_dict, :verbose, false, Bool)
+    stm_option = assign_from_kwargs(kwargs_dict, :stm_option, "analytical", String)
+    maxiter    = assign_from_kwargs(kwargs_dict, :maxiter, 15, Int)
 
     # unpack mu
     mu = p[1]
