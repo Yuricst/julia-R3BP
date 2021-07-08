@@ -79,7 +79,7 @@ function main(params, thetas, ras, verbose=false)
 	function condition_perigee_radius(u,t,integrator)
 	    r_local = sqrt((u[1] - (1-mu))^2 + u[2]^2)
 	    if 0.9moon_sma < r_local < 1.1moon_sma
-	        return check_apsis(u, mu)  # when hitting apsis
+	        return check_apsis(u[1:4], mu)  # when hitting apsis
 	    else
 	        return NaN
 	    end
@@ -158,15 +158,11 @@ function main(params, thetas, ras, verbose=false)
 		prob = ODEProblem(R3BP.rhs_pcr3bp_thrust_m1dir!, vcat(x0s[1], m0), (0.0, 2.0*tfs[1]), p)
 
 		# ---------- ensemble simulation ---------- #
-		if verbose==true
-			function prob_func(prob, i, repeat)
+		function prob_func(prob, i, repeat)
+			if verbose==true
 				print("\rproblem # $i / $nic")
-			    remake(prob, u0=x0s[i], tspan=(0.0, 2.0tfs[i]))
 			end
-		else
-			function prob_func(prob, i, repeat)
-			    remake(prob, u0=x0s[i], tspan=(0.0, 2.0tfs[i]))
-			end
+		    remake(prob, u0=vcat(x0s[i], m0), tspan=(0.0, 2.0tfs[i]))
 		end
 
 		ensemble_prob = EnsembleProblem(prob, prob_func=prob_func)
@@ -219,10 +215,10 @@ end
 # ----------------------------------------- #
 # run main analysis
 params = R3BP.get_cr3bp_param(10, 399)
-n_theta = 360
-n_ra = 40
+n_theta = 720
+n_ra = 50
 thetas = LinRange(0.0, 2π, n_theta+1)[1:end-1]
 ras = LinRange(1.0e6/params.lstar, 2.0e6/params.lstar, n_ra)
 
-main(thetas, ras)
+main(params, thetas, ras)
 println("Done!")
