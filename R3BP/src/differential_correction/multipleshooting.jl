@@ -3,6 +3,16 @@ Multiple-shooting differential correction algorithm
 """
 
 
+struct MultipleShootingOptions
+	verbose::Bool
+	n_sv::Int
+	n::Int
+	fix_time::Bool
+	periodic::Bool
+	fix_x0::Bool
+	fix_xf::Bool
+
+end
 
 """
     multiple_shooting(prob_stm, x0s::Vector, tofs, tolDC; kwargs...)
@@ -56,8 +66,11 @@ function multiple_shooting(prob_stm::ODEProblem, x0s::Array, tofs::Array, tolDC:
     n_sv = length(x0s[1])	# get state-vector length
     n    = length(x0s)      # get number of nodes from x0s
 
+	# construct struct of options
+	MSOptions = MultipleShootingOptions(verbose, n_sv, n, fix_time, periodic, fix_x0, fix_xf)
+
 	# ------------- check for exceptions ------------- #
-	multiple_shooting_exceptions(n, tofs, fix_time, rhs!, fix_x0, fix_xf)
+	multiple_shooting_exceptions(tofs, fix_time, rhs!, MSOptions)
 
     # ------------- storage setups ------------- #
 	__print_verbose(" -------------- Multiple shooting algorithm -------------- ", verbose)
@@ -77,13 +90,13 @@ function multiple_shooting(prob_stm::ODEProblem, x0s::Array, tofs::Array, tolDC:
 	__print_verbose("    Starting iterations", verbose)
 
     # initialize free-parameter guess vector
-	x0_vec, svf, n_propagated = initialize_multiple_shooting_x(x0s, tofs, n, n_sv, fix_time)
+	x0_vec, svf, n_propagated = initialize_multiple_shooting_x(x0s, tofs, MSOptions)
 
 	# initialize error vector
-	ferr = initialize_multiple_shooting_f(n, n_sv, periodic)
+	ferr = initialize_multiple_shooting_f(MSOptions)
 
     # initialize DF matrix
-	df = initialize_multiple_shooting_df(n, length(ferr), length(x0_vec), n_sv, n_propagated, periodic)
+	df = initialize_multiple_shooting_df(length(ferr), length(x0_vec), MSOptions)#n_sv, n_propagated, periodic)
 
     # initialize storages
     convflag = 0    # convergence flag
@@ -301,35 +314,35 @@ end
 
 
 """
-	multiple_shooting_exceptions(n::Int, tofs::Array, fix_time::Bool, rhs!, fix_x0::Bool, fix_xf::Bool)
+	multiple_shooting_exceptions(tofs::Array, fix_time::Bool, rhs!, MSOptions::MultipleShootingOptions)
 
 Check multiple shooting exceptions
 """
-function multiple_shooting_exceptions(n::Int, tofs::Array, fix_time::Bool, rhs!, fix_x0::Bool, fix_xf::Bool)
+function multiple_shooting_exceptions(tofs::Array, fix_time::Bool, rhs!, MSOptions::MultipleShootingOptions)
 	# exception if rhs! is not provided but fix_time == false
-	if fix_time == false && isnothing(rhs!) == true
+	if MSOptions.fix_time == false && isnothing(rhs!) == true
         error("Provide callable rhs! if fix_time==false")
     end
 
 	# exception if n < 3 but x0 or xf is fixed
-	if (fix_x0 == true && fix_xf == false) || (fix_x0 == false && fix_xf == true)
-		if n < 3
+	if (MSOptions.fix_x0 == true && MSOptions.fix_xf == false) || (MSOptions.fix_x0 == false && MSOptions.fix_xf == true)
+		if MSOptions.n < 3
 			error("Provide at least 3 nodes if fixing x0 or xf")
 		end
 
 	# exception if n < 4 but x0 and xf is fixed
-	elseif fix_x0 == true && fix_xf == true
-		if n < 4
+	elseif MSOptions.fix_x0 == true && MSOptions.fix_xf == true
+		if MSOptions.n < 4
 			error("Provide at least 4 nodes if fixing x0 or xf")
 		end
 	end
 
 	# exception if length(tof) != length(x0) - 1
-	if length(tofs) != n-1
+	if length(tofs) != MSOptions.n-1
         error("Must follow length(x0s)-1 == length(tofs)")
 
 	# exception if less than 2 nodes supplied
-    elseif n == 1
+	elseif MSOptions.n == 1
         error("Provide at least 2 nodes for multiple-shooting")
     end
 end
@@ -340,31 +353,31 @@ end
 
 Initialize initial-guess vector and propagation output vector
 """
-function initialize_multiple_shooting_x(x0s::Array, tofs::Array, n::Int, n_sv::Int, fix_time::Bool)
+function initialize_multiple_shooting_x(x0s::Array, tofs::Array, MSOptions::MultipleShootingOptions)
 	# ------------- get number of free x's ------------- #
-	n_propagated = n-1  # number of nodes to be propagated
+	n_propagated = MSOptions.n-1  # number of nodes to be propagated
 
 	# ------------- initialize space ------------- #
 	# nodes and decision vector
-	if fix_time == true
-        x0_vec = zeros(n_sv*n)   # length = (sv-elements)*(number of nodes)
+	if MSOptions.fix_time == true
+        x0_vec = zeros(MSOptions.n_sv*MSOptions.n)   # length = (sv-elements)*(number of nodes)
     else
-        x0_vec = zeros(n_sv*n + n-1)  # length = (sv-elements + 1)*(number of nodes) - 1
+        x0_vec = zeros(MSOptions.n_sv*MSOptions.n + MSOptions.n-1)  # length = (sv-elements + 1)*(number of nodes) - 1
     end
 	# propaated outcome of nodes
-	svf = zeros(n_sv*n_propagated)
+	svf = zeros(MSOptions.n_sv*(MSOptions.n-1))
 
 	# ------------- append state-vector ------------- #
     # append state-vector into initial guess
-    for i = 1:n
-        x0_vec[(i-1)*n_sv + 1 : i*(n_sv)] = x0s[i]
+    for i = 1:MSOptions.n
+        x0_vec[(i-1)*MSOptions.n_sv + 1 : i*(MSOptions.n_sv)] = x0s[i]
     end
 
 	# ------------- append time of flight ------------- #
     # append integration times into initial guess
-    if fix_time == false
-		for i = 1:n-1
-			x0_vec[n_sv*n+i] = tofs[i]
+    if MSOptions.fix_time == false
+		for i = 1:MSOptions.n-1
+			x0_vec[MSOptions.n_sv*MSOptions.n+i] = tofs[i]
 		end
     end
 	return x0_vec, svf, n_propagated
@@ -372,15 +385,15 @@ end
 
 
 """
-	initialize_multiple_shooting_f(n::Int, n_sv::Int, periodic::Bool, fix_x0::Bool, fix_xf::Bool)
+	initialize_multiple_shooting_f(MSOptions::MultipleShootingOptions)
 
 Initialize array for error vector F
 """
-function initialize_multiple_shooting_f(n::Int, n_sv::Int, periodic::Bool)
+function initialize_multiple_shooting_f(MSOptions::MultipleShootingOptions)
 	# initialize length of F vector
-	n_f = n_sv*(n-1)
-	if periodic == true
-		n_f += n_sv
+	n_f = MSOptions.n_sv*(MSOptions.n-1)
+	if MSOptions.periodic == true
+		n_f += MSOptions.n_sv
 	end
 	return zeros(n_f)
 end
@@ -392,19 +405,19 @@ end
 
 Initialize array for DF = dF/dX
 """
-function initialize_multiple_shooting_df(n::Int, nf::Int, nx::Int, n_sv::Int, n_propagated::Int, periodic::Bool)
+function initialize_multiple_shooting_df(nf::Int, nx::Int, MSOptions::MultipleShootingOptions)# n_sv::Int, n_propagated::Int, periodic::Bool)
 	# initialize DF matrix
 	df = zeros(nf, nx)
 
 	# fill-in negative identity into DF matrix
-    for j = 1:n-1  #n_propagated
-        df[(j-1)*n_sv+1:j*n_sv, j*n_sv+1:(j+1)*n_sv] = -I(n_sv)
+    for j = 1:MSOptions.n-1  #n_propagated
+        df[(j-1)*MSOptions.n_sv+1:j*MSOptions.n_sv, j*MSOptions.n_sv+1:(j+1)*MSOptions.n_sv] = -I(MSOptions.n_sv)
     end
 
     # fill-in identity to inital and final states
-    if periodic == true
-		df[n_propagated*n_sv+1:(n_propagated+1)*n_sv, 1:n_sv] = -I(n_sv)
-		df[n_propagated*n_sv+1:(n_propagated+1)*n_sv, n_sv*n_propagated+1:n_sv*(n_propagated+1)] = I(n_sv)
+    if MSOptions.periodic == true
+		df[(MSOptions.n-1)*MSOptions.n_sv+1:MSOptions.n*MSOptions.n_sv, 1:MSOptions.n_sv] = -I(MSOptions.n_sv)
+		df[(MSOptions.n-1)*MSOptions.n_sv+1:MSOptions.n*MSOptions.n_sv, MSOptions.n_sv*(MSOptions.n-1)+1:MSOptions.n_sv*MSOptions.n] = I(MSOptions.n_sv)
     end
 
 	# # fill-in identity to initial state
