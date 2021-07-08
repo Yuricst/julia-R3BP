@@ -27,7 +27,7 @@ include("manifold.jl")
 include("analyticalCollinearHalo.jl")
 
 # differential correction
-include("differential_correction/differentialCorrection_singleshoot.jl")
+include("differential_correction/differentialCorrection_singleshooting.jl")
 include("differential_correction/multipleshooting.jl")
 
 # equations of motion for trajectory design
