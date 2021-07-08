@@ -77,17 +77,16 @@ function multiple_shooting(prob_stm::ODEProblem, x0s::Array, tofs::Array, tolDC:
 	__print_verbose("    Starting iterations", verbose)
 
     # initialize free-parameter guess vector
-	x0_vec, svf, n_propagated = initialize_multiple_shooting_x(x0s, tofs, n, n_sv, fix_time, fix_x0, fix_xf)
+	x0_vec, svf, n_propagated = initialize_multiple_shooting_x(x0s, tofs, n, n_sv, fix_time)
 
 	# initialize error vector
-	ferr = initialize_multiple_shooting_f(n, n_sv, periodic, fix_x0, fix_xf)
+	ferr = initialize_multiple_shooting_f(n, n_sv, periodic)
 
     # initialize DF matrix
-	df = initialize_multiple_shooting_df(n, length(ferr), length(x0_vec), n_sv, n_propagated, periodic, fix_x0, fix_xf)
+	df = initialize_multiple_shooting_df(n, length(ferr), length(x0_vec), n_sv, n_propagated, periodic)
 
     # initialize storages
     convflag = 0    # convergence flag
-	ferr = initialize_multiple_shooting_f(n, n_sv, periodic, fix_x0, fix_xf)
 
 	# create problem-remake function for ensemble simulation
 	if use_ensemble == true
@@ -106,13 +105,13 @@ function multiple_shooting(prob_stm::ODEProblem, x0s::Array, tofs::Array, tolDC:
 
         # propagate ODE nodes and update DF
         if use_ensemble == false
-            multiple_shooting_propagate_sequential!(df, svf, prob_stm, rhs!, p, n, n_sv, n_propagated, x0_vec, tofs, fix_time, fix_x0, fix_xf, method, reltol, abstol)
+            multiple_shooting_propagate_sequential!(df, svf, prob_stm, rhs!, p, n, n_sv, n_propagated, x0_vec, tofs, fix_time, method, reltol, abstol)
         else
-            multiple_shooting_propagate_ensemble!(df, svf, prob_stm, rhs!, p, prob_func, ensemble_method, n, n_sv, n_propagated, x0_vec, tofs, fix_time, fix_x0, fix_xf, method, reltol, abstol)
+            multiple_shooting_propagate_ensemble!(df, svf, prob_stm, rhs!, p, prob_func, ensemble_method, n, n_sv, n_propagated, x0_vec, tofs, fix_time, method, reltol, abstol)
         end
 
         # update error vector F
-		multiple_shooting_update_f!(n, n_sv, ferr, svf, x0_vec, periodic, fix_x0, fix_xf, x0s, n_propagated)
+		multiple_shooting_update_f!(n, n_sv, ferr, svf, x0_vec, periodic, n_propagated)
 
         # check if tolerance is achieved
         err = norm(ferr)
@@ -135,11 +134,11 @@ end
 
 
 """
-    multiple_shooting_propaagte_sequential!(df::Matrix{Float64}, svf::Vector{Float64}, prob_stm::ODEProblem, n::Int, n_sv::Int, n_propagated::Int, x0_vec::Vector{Float64}, tofs::Array, fix_time::Bool, fix_x0::Bool, fix_xf::Bool, method, reltol::Float64, abstol::Float64)
+    multiple_shooting_propaagte_sequential!(df::Matrix{Float64}, svf::Vector{Float64}, prob_stm::ODEProblem, n::Int, n_sv::Int, n_propagated::Int, x0_vec::Vector{Float64}, tofs::Array, fix_time::Bool, method, reltol::Float64, abstol::Float64)
 
 Propagates nodes and mutates DF and xfs; solved sequentially using `remake()`
 """
-function multiple_shooting_propagate_sequential!(df::Matrix{Float64}, svf::Vector{Float64}, prob_stm::ODEProblem, rhs!, p, n::Int, n_sv::Int, n_propagated::Int, x0_vec::Vector{Float64}, tofs::Array, fix_time::Bool, fix_x0::Bool, fix_xf::Bool, method, reltol::Float64, abstol::Float64)
+function multiple_shooting_propagate_sequential!(df::Matrix{Float64}, svf::Vector{Float64}, prob_stm::ODEProblem, rhs!, p, n::Int, n_sv::Int, n_propagated::Int, x0_vec::Vector{Float64}, tofs::Array, fix_time::Bool, method, reltol::Float64, abstol::Float64)
     # re-make ODE problem and integrate until tofs[ix]
     for i = 1:n_propagated
 
@@ -172,11 +171,11 @@ end
 
 
 """
-    multiple_shooting_propaagte_ensemble!(df::Matrix{Float64}, svf::Vector{Float64}, prob_stm::ODEProblem, n::Int, n_sv::Int, n_propagated::Int, x0_vec::Vector{Float64}, tofs::Array, fix_time::Bool, fix_x0::Bool, fix_xf::Bool, method, reltol::Float64, abstol::Float64)
+    multiple_shooting_propaagte_ensemble!(df::Matrix{Float64}, svf::Vector{Float64}, prob_stm::ODEProblem, n::Int, n_sv::Int, n_propagated::Int, x0_vec::Vector{Float64}, tofs::Array, fix_time::Bool, method, reltol::Float64, abstol::Float64)
 
 Propagates nodes and mutates DF and svf; solved sequentially using `ensembleSimulation()`
 """
-function multiple_shooting_propagate_ensemble!(df::Matrix{Float64}, svf::Vector{Float64}, prob_stm::ODEProblem, rhs!, p, prob_func, ensemble_method, n::Int, n_sv::Int, n_propagated::Int, x0_vec::Vector{Float64}, tofs::Array, fix_time::Bool, fix_x0::Bool, fix_xf::Bool, method, reltol::Float64, abstol::Float64)
+function multiple_shooting_propagate_ensemble!(df::Matrix{Float64}, svf::Vector{Float64}, prob_stm::ODEProblem, rhs!, p, prob_func, ensemble_method, n::Int, n_sv::Int, n_propagated::Int, x0_vec::Vector{Float64}, tofs::Array, fix_time::Bool, method, reltol::Float64, abstol::Float64)
 	# solve ensemble problem
 	ensemble_prob = EnsembleProblem(prob_stm, prob_func=prob_func)
 	sim = solve(ensemble_prob, method, ensemble_method, trajectories=n_propagated, reltol=reltol, abstol=abstol);
@@ -212,103 +211,72 @@ end
 
 Mutate error-vector f
 """
-function multiple_shooting_update_f!(n::Int, n_sv::Int, ferr::Vector{Float64}, svf::Vector{Float64}, x0_vec::Vector{Float64}, periodic::Bool, fix_x0::Bool, fix_xf::Bool, x0s::Array, n_propagated::Int)
+function multiple_shooting_update_f!(n::Int, n_sv::Int, ferr::Vector{Float64}, svf::Vector{Float64}, x0_vec::Vector{Float64}, periodic::Bool, n_propagated::Int)
 	# update error vector F
 	ferr[1:n_sv*n_propagated] = svf - x0_vec[n_sv+1:n_sv*(n_propagated+1)]
-	n_f_additional = 0
-
 	if periodic == true
-		n_f_additional += n_sv
-		if n_f_additional == n_sv
-			f_additional = x0_vec[n_sv*n-n_sv+1:n_sv*n] - x0_vec[1:n_sv]
-		else
-			f_additional = vcat(f_additional, x0_vec[n_sv*n-n_sv+1:n_sv*n] - x0_vec[1:n_sv])
-		end
-	end
-
-	# # glueing initial state to initial value
-	# if fix_x0 == true
-	# 	n_f_additional += n_sv
-	# 	if n_f_additional == n_sv
-	# 		f_additional = x0_vec[1:n_sv] - x0s[1]
-	# 	else
-	# 		f_additional = vcat(f_additional, x0_vec[1:n_sv] - x0s[1])
-	# 	end
-	# end
-	#
-	# # glueing final state to initial value
-	# if fix_xf == true
-	# 	n_f_additional += n_sv
-	# 	if n_f_additional == n_sv
-	# 		f_additional = x0_vec[n_sv*(n_propagated)+1:n_sv*(n_propagated+1)] - x0s[end]
-	# 	else
-	# 		f_additional = vcat(f_additional, x0_vec[n_sv*n_propagated-n_sv+1:n_sv*n_propagated] - x0s[end])
-	# 	end
-	# end
-	#
-	if n_f_additional > 0
-		ferr[end-n_f_additional+1:end] = f_additional
+		ferr[end-n_sv+1:end] = x0_vec[n_sv*n-n_sv+1:n_sv*n] - x0_vec[1:n_sv]
 	end
 	return
 end
 
 
-"""
-    multiple_shooting_update_x!(x::Vector{Float64}, ferr::Vector{Float64}, df::Matrix{Float64})
-
-Apply multiple-shooting update to mutate x
-"""
-function multiple_shooting_update_x!(x::Vector{Float64}, ferr::Vector{Float64}, df::Matrix{Float64}, n::Int, n_sv::Int, fix_time, fix_x0, fix_xf)
-	# reduce x acoordingly
-	if fix_x0 == false && fix_xf == false
-		x_red = x
-		df_red = df
-
-	elseif fix_x0 == false && fix_xf == true
-		if fix_time == true
-			x_red  = x[1:end-n_sv]
-			df_red = df[:, 1:(n-1)*n_sv]
-		else  # fix_time == false
-			x_red = vcat(x[1:(n-1)*n_sv], x[n*n_sv+1:end])
-			df_red = hcat(df[:, 1:(n-1)*n_sv], df[:, n*n_sv+1:end])
-		end
-
-	elseif fix_x0 == true  && fix_xf == false
-		x_red = x[n_sv+1:end]
-		df_red= df[:, n_sv+1:end]
-
-	elseif fix_x0 == true && fix_xf == true
-		if fix_time == true
-			x_red = x[n_sv+1:end-n_sv]
-			df_red = df[:, n_sv+1:(n-1)*n_sv]
-		else  # fix_time == false
-			x_red = vcat(x[n_sv+1:(n-1)*n_sv], x[n*n_sv+1:end])
-			df_red = hcat(df[:, n_sv+1:(n-1)*n_sv], df[:, n*n_sv+1:end])
-		end
-	end
-
-	print("ferr: "); println(length(ferr))
-	print("x_red: "); println(length(x_red))
-	print("df_red: "); println(size(df_red))
-
-	# apply mutliple-shooting update law
-	apply_update_law!(x_red, ferr, df_red)
-
-	# re-construct x
-	if fix_x0 == false && fix_xf == false
-		x[:] = x_red
-	elseif fix_x0 == false && fix_xf == true
-		x[:] = vcat(x_red, x[end-n_sv+1:end])
-		#xred =  x[1:end-n_sv]
-	elseif fix_x0 == true  && fix_xf == false
-		#xred = x[n_sv+1:end]
-		x[:] = vcat(x[1:n_sv], x_red)
-
-	elseif fix_x0 == true && fix_xf == true
-		x[:] = vcat(x[1:n_sv], x_red, x[end-n_sv+1:end])
-	end
-    return
-end
+# """
+#     multiple_shooting_update_x!(x::Vector{Float64}, ferr::Vector{Float64}, df::Matrix{Float64})
+#
+# Apply multiple-shooting update to mutate x
+# """
+# function multiple_shooting_update_x!(x::Vector{Float64}, ferr::Vector{Float64}, df::Matrix{Float64}, n::Int, n_sv::Int, fix_time, fix_x0, fix_xf)
+# 	# reduce x acoordingly
+# 	if fix_x0 == false && fix_xf == false
+# 		x_red = x
+# 		df_red = df
+#
+# 	elseif fix_x0 == false && fix_xf == true
+# 		if fix_time == true
+# 			x_red  = x[1:end-n_sv]
+# 			df_red = df[:, 1:(n-1)*n_sv]
+# 		else  # fix_time == false
+# 			x_red = vcat(x[1:(n-1)*n_sv], x[n*n_sv+1:end])
+# 			df_red = hcat(df[:, 1:(n-1)*n_sv], df[:, n*n_sv+1:end])
+# 		end
+#
+# 	elseif fix_x0 == true  && fix_xf == false
+# 		x_red = x[n_sv+1:end]
+# 		df_red= df[:, n_sv+1:end]
+#
+# 	elseif fix_x0 == true && fix_xf == true
+# 		if fix_time == true
+# 			x_red = x[n_sv+1:end-n_sv]
+# 			df_red = df[:, n_sv+1:(n-1)*n_sv]
+# 		else  # fix_time == false
+# 			x_red = vcat(x[n_sv+1:(n-1)*n_sv], x[n*n_sv+1:end])
+# 			df_red = hcat(df[:, n_sv+1:(n-1)*n_sv], df[:, n*n_sv+1:end])
+# 		end
+# 	end
+#
+# 	print("ferr: "); println(length(ferr))
+# 	print("x_red: "); println(length(x_red))
+# 	print("df_red: "); println(size(df_red))
+#
+# 	# apply mutliple-shooting update law
+# 	apply_update_law!(x_red, ferr, df_red)
+#
+# 	# re-construct x
+# 	if fix_x0 == false && fix_xf == false
+# 		x[:] = x_red
+# 	elseif fix_x0 == false && fix_xf == true
+# 		x[:] = vcat(x_red, x[end-n_sv+1:end])
+# 		#xred =  x[1:end-n_sv]
+# 	elseif fix_x0 == true  && fix_xf == false
+# 		#xred = x[n_sv+1:end]
+# 		x[:] = vcat(x[1:n_sv], x_red)
+#
+# 	elseif fix_x0 == true && fix_xf == true
+# 		x[:] = vcat(x[1:n_sv], x_red, x[end-n_sv+1:end])
+# 	end
+#     return
+# end
 
 
 """
@@ -372,7 +340,7 @@ end
 
 Initialize initial-guess vector and propagation output vector
 """
-function initialize_multiple_shooting_x(x0s::Array, tofs::Array, n::Int, n_sv::Int, fix_time::Bool, fix_x0::Bool, fix_xf::Bool)
+function initialize_multiple_shooting_x(x0s::Array, tofs::Array, n::Int, n_sv::Int, fix_time::Bool)
 	# ------------- get number of free x's ------------- #
 	n_propagated = n-1  # number of nodes to be propagated
 
@@ -408,16 +376,10 @@ end
 
 Initialize array for error vector F
 """
-function initialize_multiple_shooting_f(n::Int, n_sv::Int, periodic::Bool, fix_x0::Bool, fix_xf::Bool)
+function initialize_multiple_shooting_f(n::Int, n_sv::Int, periodic::Bool)
 	# initialize length of F vector
 	n_f = n_sv*(n-1)
 	if periodic == true
-		n_f += n_sv
-	end
-	if fix_x0 == true
-		n_f += n_sv
-	end
-	if fix_xf == true
 		n_f += n_sv
 	end
 	return zeros(n_f)
@@ -430,12 +392,9 @@ end
 
 Initialize array for DF = dF/dX
 """
-function initialize_multiple_shooting_df(n::Int, nf::Int, nx::Int, n_sv::Int, n_propagated::Int, periodic::Bool, fix_x0::Bool, fix_xf::Bool)
+function initialize_multiple_shooting_df(n::Int, nf::Int, nx::Int, n_sv::Int, n_propagated::Int, periodic::Bool)
 	# initialize DF matrix
 	df = zeros(nf, nx)
-	#n_f_additional = 0
-
-	print("Size of df: "); println(size(df))
 
 	# fill-in negative identity into DF matrix
     for j = 1:n-1  #n_propagated
@@ -446,9 +405,8 @@ function initialize_multiple_shooting_df(n::Int, nf::Int, nx::Int, n_sv::Int, n_
     if periodic == true
 		df[n_propagated*n_sv+1:(n_propagated+1)*n_sv, 1:n_sv] = -I(n_sv)
 		df[n_propagated*n_sv+1:(n_propagated+1)*n_sv, n_sv*n_propagated+1:n_sv*(n_propagated+1)] = I(n_sv)
-		#n_f_additional += n_sv
     end
-	#
+
 	# # fill-in identity to initial state
 	# if fix_x0 == true
 	# 	df[n_propagated*n_sv+1+n_f_additional:(n_propagated+1)*n_sv+n_f_additional, 1:n_sv] = I(n_sv)
