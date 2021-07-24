@@ -11,8 +11,8 @@ struct MultipleShootingOptions
 	periodic::Bool
 	fix_x0::Bool
 	fix_xf::Bool
-
 end
+
 
 """
     multiple_shooting(prob_stm, x0s::Vector, tofs, tolDC; kwargs...)
