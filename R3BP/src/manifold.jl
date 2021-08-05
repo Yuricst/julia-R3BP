@@ -172,6 +172,7 @@ Function to obtain manifold of LPO
 
 # Returns
     `EnsembleSolution`: ODE solution of `n` discrete manifold branches
+    `array`: x0_ptb_vec
 """
 function get_manifold(
             μ::Float64,
@@ -274,7 +275,7 @@ function get_manifold(
     # construct Ensemble Problem
     ensemble_prob = EnsembleProblem(prob_branch, prob_func=prob_func)
 
-    # return output of EnsembleProblem
+    # return output of EnsembleProblem and perturbed ic vector
     return solve(ensemble_prob, method, EnsembleThreads(), trajectories=n, callback=callback, method=method, reltol=reltol, abstol=abstol), x0_ptb_vec
 end
 

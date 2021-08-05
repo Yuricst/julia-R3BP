@@ -159,9 +159,10 @@ Expect control-law function in the form:
 """
 function rhs_pcr3bp_control!(du,u,p,t)
     # unpack parameters
-    μ, mdot, control_law, τ = p[1:4]
+    μ, mdot, τ = p[1:3]
+    control_law = p[end]
     # get thrust direction
-    tx, ty = control_law(du,u,p,t)
+    tx, ty, mdot_scaled = control_law(du,u,p[1:end-1],t)
     # unpack state
     x, y = u[1], u[2]
     vx, vy = u[3], u[4]
@@ -173,10 +174,10 @@ function rhs_pcr3bp_control!(du,u,p,t)
     du[1] = u[3]
     du[2] = u[4]
     # derivatives of velocities
-    du[3] = 2*vy + x - ((1-μ)/r1^3)*(μ+x) + (μ/r2^3)*(1-μ-x) + tx/m
-    du[4] = -2*vx + y - ((1-μ)/r1^3)*y - (μ/r2^3)*y + ty/m
+    du[3] =  2*vy + x - ((1-μ)/r1^3)*(μ+x) + (μ/r2^3)*(1-μ-x) + tx/m
+    du[4] = -2*vx + y - ((1-μ)/r1^3)*y     - (μ/r2^3)*y       + ty/m
     # mass derivative
-    du[5] = -mdot*τ
+    du[5] = -mdot_scaled
 end
 
 
@@ -199,9 +200,10 @@ Expect control-law function in the form:
 """
 function rhs_cr3bp_control!(du,u,p,t)
     # unpack parameters
-    μ, mdot, control_law, τ = p[1:4]
+    μ, mdot, τ = p[1:3]
+    control_law = p[end]
     # get thrust direction
-    tx, ty, tz = control_law(du,u,p,t)
+    tx, ty, tz = control_law(du,u,p[1:end-1],t)
     # unpack state
     x, y, z = u[1], u[2], u[3]
     vx, vy, vz = u[4], u[5], u[6]
@@ -241,9 +243,10 @@ Expect control-law function in the form:
 """
 function rhs_bcr4bp_control!(du,u,p,t)
     # unpack parameters
-    μ, μ_3, t0, a_s, ω_s, mdot, control_law, τ = p[1:8]
+    μ, μ_3, t0, a_s, ω_s, mdot, τ = p[1:7]
+    control_law = p[end]
     # get thrust direction
-    tx, ty, tz = control_law(du,u,p,t)
+    tx, ty, tz = control_law(du,u,p[1:end-1],t)
 
     # unpack state
     x, y, z, vx, vy, vz, m = u
