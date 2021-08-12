@@ -4,14 +4,14 @@ LPO family handling
 
 
 """
-    lpo2df(mu::Float64, x0::Vector, period::Float64, m1::Int, m2::Int; kwargs...)
+    lpo2df!(mu::Float64, x0::Vector, period::Float64, m1::Int, m2::Int; kwargs...)
 
 Create dataframe entry from LPO characteristics
 
 # Optional keyword arguments
     - `store_stability::Bool`: whether to compute & store stability
 """
-function lpo2df(mu::Float64, x0::Vector, period::Float64, m1::Int, m2::Int, lp::Int, familyname::String="default"; kwargs...)
+function lpo2df!(mu::Float64, x0::Vector, period::Float64, m1::Int, m2::Int, lp::Int, familyname::String="default"; kwargs...)
     # unpack keyword arguments
     kwargs_dict = Dict(kwargs)
     store_stability = assign_from_kwargs(kwargs_dict, :store_stability, true)
@@ -53,7 +53,7 @@ function lpo2df(mu::Float64, x0::Vector, period::Float64, m1::Int, m2::Int, lp::
         dict_entry["stability"] = stability
     end
     if get_dict == false
-        return df = DataFrame(dict_entry)
+        return DataFrame(dict_entry)
     else
         return dict_entry
     end
@@ -80,7 +80,7 @@ function lpo2df!(df::DataFrame, mu::Float64, x0::Vector, period::Float64, m1::In
     # unpack keyword arguments
     kwargs_dict = Dict(kwargs)
     store_stability = assign_from_kwargs(kwargs_dict, :store_stability, true)
-    dict_new = lpo2df(mu, x0, period, m1, m2, lp, familyname, store_stability=store_stability, get_dict=true)
+    dict_new = lpo2df!(mu, x0, period, m1, m2, lp, familyname, store_stability=store_stability, get_dict=true)
     # combine to existing dataframe
     push!(df, dict_new)
     return df

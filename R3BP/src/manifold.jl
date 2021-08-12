@@ -40,18 +40,22 @@ function get_stable_unstable_eigvecs(λs, vs)
         end
     end
 
-    if abs(λs[ idx_stb_unstb[1] ]) > abs(λs[ idx_stb_unstb[2] ])
-        eig_unstb = real( λs[ idx_stb_unstb[1] ] );
-        v_unstb   = real( vs[:, idx_stb_unstb[1] ] );
-        eig_stb   = real( λs[ idx_stb_unstb[2] ] );
-        v_stb     = real( vs[:, idx_stb_unstb[2] ] );
+    if length(idx_stb_unstb) > 0
+        if abs(λs[ idx_stb_unstb[1] ]) > abs(λs[ idx_stb_unstb[2] ])
+            eig_unstb = real( λs[ idx_stb_unstb[1] ] );
+            v_unstb   = real( vs[:, idx_stb_unstb[1] ] );
+            eig_stb   = real( λs[ idx_stb_unstb[2] ] );
+            v_stb     = real( vs[:, idx_stb_unstb[2] ] );
+        else
+            eig_unstb = real( λs[ idx_stb_unstb[2] ] );
+            v_unstb   = real( vs[:, idx_stb_unstb[2] ] );
+            eig_stb   = real( λs[ idx_stb_unstb[1] ] );
+            v_stb     = real( vs[:, idx_stb_unstb[1] ] );
+        end
+        return eig_unstb, eig_stb, v_unstb, v_stb
     else
-        eig_unstb = real( λs[ idx_stb_unstb[2] ] );
-        v_unstb   = real( vs[:, idx_stb_unstb[2] ] );
-        eig_stb   = real( λs[ idx_stb_unstb[1] ] );
-        v_stb     = real( vs[:, idx_stb_unstb[1] ] );
+        return 1.0, 1.0, 0.0, 0.0
     end
-    return eig_unstb, eig_stb, v_unstb, v_stb
 end
 
 
