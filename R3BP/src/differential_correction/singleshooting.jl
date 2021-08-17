@@ -96,7 +96,7 @@ function ssdc_periodic_xzplane(p, x0, period0; kwargs...)
     # unpack kwargs
     kwargs_dict = Dict(kwargs)
     maxiter = assign_from_kwargs(kwargs_dict, :maxiter, 15, Int)
-    method  = assign_from_kwargs(kwargs_dict, :method, Tsit5())
+    method  = assign_from_kwargs(kwargs_dict, :method, Vern7())
     reltol  = assign_from_kwargs(kwargs_dict, :reltol, 1.e-12, Float64)
     abstol  = assign_from_kwargs(kwargs_dict, :abstol, 1.e-12, Float64)
     fix     = assign_from_kwargs(kwargs_dict, :fix, "period", String)
@@ -249,7 +249,9 @@ function ssdc_periodic_xzplane(p, x0, period0; kwargs...)
 
         # check convergence
         if norm(ferr) < tolDC
-            @printf("Converged at iteration %i\n", idx)
+            if verbose==true
+                @printf("Converged at iteration %i\n", idx)
+            end
             flag = 1
             break
         else

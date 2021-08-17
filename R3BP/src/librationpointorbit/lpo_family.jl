@@ -28,7 +28,6 @@ function lpo2df!(mu::Float64, x0::Vector, period::Float64, m1::Int, m2::Int, lp:
             "sv_vy" => x0[5],
             "sv_vz" => x0[6],
             "period" => period,
-            "jacobi" => jacobiConstant(mu, x0),
             "m1" => m1,
             "m2" => m2,
             "family" => familyname
@@ -41,7 +40,6 @@ function lpo2df!(mu::Float64, x0::Vector, period::Float64, m1::Int, m2::Int, lp:
             "sv_vx" => x0[3],
             "sv_vy" => x0[4],
             "period" => period,
-            "jacobi" => jacobiConstant(mu, x0),
             "m1" => m1,
             "m2" => m2,
             "family" => familyname
