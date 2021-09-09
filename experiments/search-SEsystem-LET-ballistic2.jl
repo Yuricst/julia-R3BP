@@ -215,7 +215,7 @@ end
 # ----------------------------------------- #
 # run main analysis
 params = R3BP.get_cr3bp_param(10, 399)
-n_theta = 720
+n_theta = 360
 n_ra = 50
 thetas = LinRange(0.0, 2π, n_theta+1)[1:end-1]
 ras = LinRange(1.0e6/params.lstar, 2.0e6/params.lstar, n_ra)
