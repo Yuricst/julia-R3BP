@@ -3,15 +3,19 @@ LPO family handling
 """
 
 
+function foobar(el)
+    println(el)
+end
+
 """
-    lpo2df!(mu::Float64, x0::Vector, period::Float64, m1::Int, m2::Int; kwargs...)
+    lpo2df!(mu::Float64, x0::Vector, period::Float64, m1::Int, m2::Int, lp::Int, familyname::String="default", system::String="CR3BP"; kwargs...)
 
 Create dataframe entry from LPO characteristics
 
 # Optional keyword arguments
     - `store_stability::Bool`: whether to compute & store stability
 """
-function lpo2df!(mu::Float64, x0::Vector, period::Float64, m1::Int, m2::Int, lp::Int, familyname::String="default"; kwargs...)
+function lpo2df!(mu::Float64, x0::Vector, period::Float64, m1::Int, m2::Int, lp::Int, familyname::String, system::String; kwargs...)
     # unpack keyword arguments
     kwargs_dict = Dict(kwargs)
     store_stability = assign_from_kwargs(kwargs_dict, :store_stability, true)
@@ -31,7 +35,8 @@ function lpo2df!(mu::Float64, x0::Vector, period::Float64, m1::Int, m2::Int, lp:
             "jacobi" => jacobiConstant(mu, x0),
             "m1" => m1,
             "m2" => m2,
-            "family" => familyname
+            "family" => familyname,
+            "system" => system,
         )
     elseif length(x0) == 4
         dict_entry = Dict(
@@ -44,7 +49,8 @@ function lpo2df!(mu::Float64, x0::Vector, period::Float64, m1::Int, m2::Int, lp:
             "jacobi" => jacobiConstant(mu, x0),
             "m1" => m1,
             "m2" => m2,
-            "family" => familyname
+            "family" => familyname,
+            "system" => system,
         )
     else
         throw(ArgumentError(x0, "State-vector should be length 4 or 6!"))
@@ -63,15 +69,15 @@ end
 
 
 """
-    lpo2df!(df::DataFrame, mu::Float64, x0::Vector, period::Float64, m1::Int, m2::Int, lp::Int, familyname::String="default"; kwargs...)
+    lpo2df!(df::DataFrame, mu::Float64, x0::Vector, period::Float64, m1::Int, m2::Int, lp::Int, familyname::String="default", system::String="CR3BP"; kwargs...)
 
 Mutate DataFrame by appending new member
 """
-function lpo2df!(df::DataFrame, mu::Float64, x0::Vector, period::Float64, m1::Int, m2::Int, lp::Int, familyname::String="default"; kwargs...)
+function lpo2df!(df::DataFrame, mu::Float64, x0::Vector, period::Float64, m1::Int, m2::Int, lp::Int, familyname::String="default", system::String="CR3BP"; kwargs...)
     # unpack keyword arguments
     kwargs_dict = Dict(kwargs)
     store_stability = assign_from_kwargs(kwargs_dict, :store_stability, true)
-    dict_new = lpo2df!(mu, x0, period, m1, m2, lp, familyname, store_stability=store_stability, get_dict=true)
+    dict_new = lpo2df!(mu, x0, period, m1, m2, lp, familyname, system, store_stability=store_stability, get_dict=true)
     # combine to existing dataframe
     push!(df, dict_new)
     return df
