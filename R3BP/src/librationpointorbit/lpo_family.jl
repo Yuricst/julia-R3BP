@@ -106,18 +106,23 @@ end
 
 Construct family of LPO based on natural parameter continuation in period and single-shooting with xz-symmetry.
 """
-function get_family!(p, x0_guess::Vector, period_guess::Float64, dperiod::Float64, maxiter::Int; kwargs...)
+function get_family!(p::Vector, x0_guess::Vector, period_guess::Float64, dperiod::Float64, maxiter::Int; kwargs...)
 
     # ---------- extract arguments ---------- #
     kwargs_dict = Dict(kwargs)
     # main manifold options
-    max_not_improve = R3BP.assign_from_kwargs(kwargs_dict, :max_not_improved, 5)
+    max_not_improved = R3BP.assign_from_kwargs(kwargs_dict, :max_not_improved, 5)
     m1 = R3BP.assign_from_kwargs(kwargs_dict, :m1, 0)
     m2 = R3BP.assign_from_kwargs(kwargs_dict, :m2, 0)
     lp = R3BP.assign_from_kwargs(kwargs_dict, :lp, 0)
+    fix = R3BP.assign_from_kwargs(kwargs_dict, :fix, "period")
     familyname = R3BP.assign_from_kwargs(kwargs_dict, :familyname, "default")
     period_min = R3BP.assign_from_kwargs(kwargs_dict, :period_min, 0.0)
     period_max = R3BP.assign_from_kwargs(kwargs_dict, :period_max, 100.0)
+    method  = assign_from_kwargs(kwargs_dict, :method, Vern7())
+    reltol  = assign_from_kwargs(kwargs_dict, :reltol, 1.e-12, Float64)
+    abstol  = assign_from_kwargs(kwargs_dict, :abstol, 1.e-12, Float64)
+
     mu = p[1]
 
     # initialize counters and storage
@@ -129,7 +134,7 @@ function get_family!(p, x0_guess::Vector, period_guess::Float64, dperiod::Float6
     @showprogress for i = 1:maxiter
         # run new shooting
         res_iter = R3BP.ssdc_periodic_xzplane(p, x0_guess, period_guess;
-            fix="period", method=method, reltol=reltol, abstol=abstol);
+            fix=fix, method=method, reltol=reltol, abstol=abstol);
 
         # store & update guess if converged
         if res_iter.flag == 1
@@ -146,8 +151,6 @@ function get_family!(p, x0_guess::Vector, period_guess::Float64, dperiod::Float6
             x0_guess  = res_iter.x0
             period_guess = res_iter.period + dperiod
             i_family += 1
-
-            print_period = res.period
 
         # else decrease natural parameter step
         else
