@@ -98,7 +98,7 @@ Single-shooting differential correction for periodic trajectory with symmetry ac
 # Returns
     (struct): struct with fields: x0, period, sol, flag, fiters
 """
-function ssdc_periodic_xzplane(p::Vector, x0::Vector, period0::Real; kwargs...)
+function ssdc_periodic_xzplane(p, x0::Vector, period0::Real; kwargs...)
     # unpack kwargs
     kwargs_dict = Dict(kwargs)
     maxiter = assign_from_kwargs(kwargs_dict, :maxiter, 15, Int)
