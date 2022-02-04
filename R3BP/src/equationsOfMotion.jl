@@ -270,7 +270,7 @@ function rhs_er3bp_sv!(du,u,p,t)
    Omega_z = -((1-mu)/r1^3)*z - (mu/r2^3)*z;
 
    # ER3BP term
-   ecc_factor = e*cos(t-t0) / ( 1 + e*cos(e) );
+   ecc_factor = e*cos(t-t0) / ( 1 + e*cos(t-t0) );
 
    # velocity-state derivative
    du[4] =  2*vy + Omega_x - ecc_factor*Omega_x;
