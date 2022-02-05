@@ -85,7 +85,7 @@ Get index of closest member
 function find_closest_member(df::DataFrame, column::String, value)
     diffsqr = (df[!, column] .- value).^2
     idx = argmin(diffsqr)
-    return idx
+    return df[idx,:]
 end
 
 
@@ -100,13 +100,23 @@ function get_state_from_df(df::DataFrame, idx::Int)
 end
 
 
+"""
+    get_state_from_df(df::DataFrame, idx::Int)
+
+Get state-vectort from DataFrame
+"""
+function get_state_from_df(df::DataFrameRow)
+    return [df["sv_rx"], df["sv_ry"], df["sv_rz"],
+            df["sv_vx"], df["sv_vy"], df["sv_vz"]]
+end
+
 
 """
     get_family!(p, x0_guess::Vector, period_guess::Float64, dperiod::Float64, maxiter::Int; kwargs...)
 
 Construct family of LPO based on natural parameter continuation in period and single-shooting with xz-symmetry.
 """
-function get_family!(p::Vector, x0_guess::Vector, period_guess::Float64, dperiod::Float64, maxiter::Int; kwargs...)
+function get_family!(p, x0_guess::Vector, period_guess::Float64, dperiod::Float64, maxiter::Int; kwargs...)
 
     # ---------- extract arguments ---------- #
     kwargs_dict = Dict(kwargs)
@@ -128,7 +138,6 @@ function get_family!(p::Vector, x0_guess::Vector, period_guess::Float64, dperiod
     # initialize counters and storage
     i_not_improved = 0
     i_family = 0
-    sols_lst = []
     df = DataFrame()
 
     @showprogress for i = 1:maxiter
@@ -144,8 +153,6 @@ function get_family!(p::Vector, x0_guess::Vector, period_guess::Float64, dperiod
             else
                 df = R3BP.lpo2df!(df, mu, res_iter.x0, res_iter.period, m1, m2, lp, familyname)
             end
-            # store into list of sols
-            push!(sols_lst, res_iter.sol)
 
             # update initial guess
             x0_guess  = res_iter.x0
@@ -180,5 +187,5 @@ function get_family!(p::Vector, x0_guess::Vector, period_guess::Float64, dperiod
             break
         end
     end
-    return df, sols_lst
+    return df
 end

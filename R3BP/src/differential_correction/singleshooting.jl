@@ -66,9 +66,15 @@ struct Struct_out_ssdc
     period::Float64
     sol::ODESolution
     flag::Int
-    fiters
+    fiters::Vector
 end
 
+struct SingleShootingSolution
+    x0::Vector
+    period::Float64
+    flag::Int
+    fiters::Vector
+end
 
 """
     ssdc_periodic_xzplane(p, x0, period0; kwargs...)
@@ -92,13 +98,13 @@ Single-shooting differential correction for periodic trajectory with symmetry ac
 # Returns
     (struct): struct with fields: x0, period, sol, flag, fiters
 """
-function ssdc_periodic_xzplane(p, x0, period0; kwargs...)
+function ssdc_periodic_xzplane(p, x0::Vector, period0::Real; kwargs...)
     # unpack kwargs
     kwargs_dict = Dict(kwargs)
     maxiter = assign_from_kwargs(kwargs_dict, :maxiter, 15, Int)
-    method  = assign_from_kwargs(kwargs_dict, :method, Vern7())
-    reltol  = assign_from_kwargs(kwargs_dict, :reltol, 1.e-12, Float64)
-    abstol  = assign_from_kwargs(kwargs_dict, :abstol, 1.e-12, Float64)
+    method  = assign_from_kwargs(kwargs_dict, :method, Tsit5())
+    reltol  = assign_from_kwargs(kwargs_dict, :reltol, 1.e-13, Float64)
+    abstol  = assign_from_kwargs(kwargs_dict, :abstol, 1.e-14, Float64)
     fix     = assign_from_kwargs(kwargs_dict, :fix, "period", String)
 
     tolDC      = assign_from_kwargs(kwargs_dict, :tolDC, 1.0e-12, Float64)
@@ -116,11 +122,19 @@ function ssdc_periodic_xzplane(p, x0, period0; kwargs...)
 
     # if stm_option is AD, create a base problem for later
     #if cmp(stm_option, "ad")==0
-        if cmp(system, "cr3bp")==0
+    if cmp(system, "cr3bp")==0
+        if cmp(stm_option, "ad")==0
             prob_base = ODEProblem(R3BP.rhs_cr3bp_sv!, x0iter, period/2, p);
-        elseif cmp(system, "er3bp")==0
-            prob_base = ODEProblem(R3BP.rhs_er3bp_sv!, x0iter, period/2, p);
+        else
+            prob_base = ODEProblem(R3BP.rhs_cr3bp_svstm!, x0iter, period/2, p);
         end
+    elseif cmp(system, "er3bp")==0
+        if cmp(stm_option, "ad")==0
+            prob_base = ODEProblem(R3BP.rhs_er3bp_sv!, x0iter, period/2, p);
+        else
+            prob_base = ODEProblem(R3BP.rhs_er3bp_svstm!, x0iter, period/2, p);
+        end
+    end
     #end
 
     # ----- iterate until convergence ----- #
@@ -128,27 +142,18 @@ function ssdc_periodic_xzplane(p, x0, period0; kwargs...)
     flag = 0
     fiters = []
     while idx < maxiter+1
-
-        # define ODE problem
-        if length(x0iter)==4
-            x0_stm = vcat(x0iter, reshape(I(4), (16,)))[:]
-            #x0_stm = x0_stm = hcat(x0iter, [1 0 0 0  0 1 0 0  0 0 1 0  0 0 0 1]);
-            if cmp(system, "cr3bp")==0
-                prob = ODEProblem(R3BP.rhs_pcr3bp_svstm!, x0_stm, period/2, p);
-            else
-                error("Planar ER3BP not implemented!")
-            end
-        elseif length(x0iter)==6
-            x0_stm = vcat(x0iter, reshape(I(6), (36,)))[:]
-            #x0_stm = hcat(x0iter, [1 0 0 0 0 0  0 1 0 0 0 0  0 0 1 0 0 0  0 0 0 1 0 0  0 0 0 0 1 0  0 0 0 0 0 1]);
-            if cmp(system, "cr3bp")==0
-                prob = ODEProblem(R3BP.rhs_cr3bp_svstm!, x0_stm, period/2, p);
-            elseif cmp(system, "er3bp")==0
-                prob = ODEProblem(R3BP.rhs_er3bp_svstm!, x0_stm, period/2, p);
-            end
+        # remake ODE problem
+        if cmp(stm_option, "ad")==0
+            prob = remake(prob_base; tspan=(0.0, period/2), u0=x0iter, p=p)
         else
-            error("x0 should be length 4 or 6")
+            if length(x0iter)==4
+                x0_stm = vcat(x0iter, reshape(I(4), (16,)))[:]
+            elseif length(x0iter)==6
+                x0_stm = vcat(x0iter, reshape(I(6), (36,)))[:]
+            end
+            prob = remake(prob_base; tspan=(0.0, period/2), u0=x0_stm, p=p)
         end
+
         # solve ODE problem
         sol = solve(prob, method, reltol=reltol, abstol=abstol);
         # final state and STM
@@ -179,12 +184,6 @@ function ssdc_periodic_xzplane(p, x0, period0; kwargs...)
             # STM using AD
             stm = ForwardDiff.jacobian(x0iter -> get_statef(prob_base, x0iter, period/2, p), x0iter)
         end
-        #println("STM diff")
-        #print_stm(reshape(sol.u[end][length(x0iter)+1:end], (length(x0iter),length(x0iter)))' - ForwardDiff.jacobian(x0iter -> get_statef(prob_base, x0iter, period/2, p), x0iter))
-        #println(reshape(sol.u[end][length(x0iter)+1:end], (length(x0iter),length(x0iter)))' - ForwardDiff.jacobian(x0iter -> get_statef(prob_base, x0iter, period/2, p), x0iter))
-
-        # println("STM from AD")
-        # println(ForwardDiff.jacobian(x0iter -> get_statef(prob_base, x0iter, period/2, p), x0iter))
 
         # residual vector
         if length(x0iter)==4
@@ -262,23 +261,26 @@ function ssdc_periodic_xzplane(p, x0, period0; kwargs...)
         end
     end
 
-    # return result
-    if length(x0iter)==4
-        if cmp(system, "cr3bp")==0
-            prob = ODEProblem(R3BP.rhs_pcr3bp_sv!, x0iter, period, p);
-        else
-            error("P-ER3BP not implemented!")
-        end
-    else
-        if cmp(system, "cr3bp")==0
-            prob = ODEProblem(R3BP.rhs_cr3bp_sv!, x0iter, period, p);
-        elseif cmp(system, "er3bp")==0
-            prob = ODEProblem(R3BP.rhs_er3bp_sv!, x0iter, period, p);
-        end
-    end
-    return Struct_out_ssdc(x0iter, period, solve(prob, method, reltol=reltol, abstol=abstol), flag, fiters);
-    #return Struct_out_ssdc(x0iter, period, solve(prob, method, reltol=reltol, abstol=abstol), flag);
+    # # return result
+    # if length(x0iter)==4
+    #     if cmp(system, "cr3bp")==0
+    #         prob = ODEProblem(R3BP.rhs_pcr3bp_sv!, x0iter, period, p);
+    #     else
+    #         error("P-ER3BP not implemented!")
+    #     end
+    # else
+    #     if cmp(system, "cr3bp")==0
+    #         prob = ODEProblem(R3BP.rhs_cr3bp_sv!, x0iter, period, p);
+    #     elseif cmp(system, "er3bp")==0
+    #         prob = ODEProblem(R3BP.rhs_er3bp_sv!, x0iter, period, p);
+    #     end
+    # end
+    # construct problem
+    return SingleShootingSolution(x0iter, period, flag, fiters)
+    #sol_final = solve(prob, method, reltol=reltol, abstol=abstol)
+    #return Struct_out_ssdc(x0iter, period, sol_final, flag, fiters)
 end
+
 
 
 """
