@@ -84,7 +84,7 @@ Single-shooting differential correction for periodic trajectory with symmetry ac
 # Arguments
     p (tuple): parameters for DifferentialEquations
     x0 (Array):
-    period0 (float):
+    period0 (float): period of LPO; shooting is done based on perpendicular plane crossing at period0/2
     kwargs:
         maxiter
         reltol

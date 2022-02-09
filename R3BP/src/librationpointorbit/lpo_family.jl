@@ -112,6 +112,16 @@ end
 
 
 """
+Construct LPO with closest period
+"""
+function df_lpo_specify_period(df::Union{DataFrame, DataFrameRow}, period_target::Float64)
+    closest = R3BP.find_closest_member(df, "period", period_target)
+    return R3BP.ssdc_periodic_xzplane(closest["mu"], R3BP.get_state_from_df(closest),
+        period_target, fix="period")
+end
+
+
+"""
     get_family!(p, x0_guess::Vector, period_guess::Float64, dperiod::Float64, maxiter::Int; kwargs...)
 
 Construct family of LPO based on natural parameter continuation in period and single-shooting with xz-symmetry.

@@ -10,6 +10,7 @@ using ForwardDiff
 using Printf
 using DataFrames
 using ProgressMeter
+using JSON
 #using Plots
 
 # defining system parameters
