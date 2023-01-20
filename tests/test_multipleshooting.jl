@@ -8,8 +8,6 @@ using DifferentialEquations
 using BenchmarkTools
 using Plots
 
-pyplot()
-
 include("../R3BP/src/R3BP.jl")
 
 println("Running test for multiple shooting!")

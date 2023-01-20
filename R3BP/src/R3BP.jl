@@ -11,11 +11,13 @@ using Printf
 using DataFrames
 using ProgressMeter
 using JSON
+
+using AstrodynamicsBase
 #using Plots
 
 # defining system parameters
-include("get_gm.jl")
-include("get_semiMajorAxis.jl")
+#include("get_gm.jl")
+#include("get_semiMajorAxis.jl")
 include("get_cr3bp_param.jl")
 
 # basic functions for CR3BP

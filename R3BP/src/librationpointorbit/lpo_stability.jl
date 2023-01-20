@@ -18,7 +18,7 @@ end
 
 Compute linear stability given stable and unstable eigenvalues
 """
-function stability(monodromy::Adjoint{Float64,Array{Float64,2}})
+function stability(monodromy)
     λs = eigvals(monodromy)
     vs = eigvecs(monodromy)
     λ_unstb, λ_stb, _, _ = get_stable_unstable_eigvecs(λs, vs)

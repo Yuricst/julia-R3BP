@@ -28,9 +28,8 @@ function lpo2df!(mu::Float64, x0::Vector, period::Float64, m1::Int, m2::Int, lp:
             "sv_vy" => x0[5],
             "sv_vz" => x0[6],
             "period" => period,
-            "m1" => m1,
-            "m2" => m2,
-            "family" => familyname
+            "family" => familyname,
+            "jacobi" => jacobiConstant(mu, x0),
         )
     elseif length(x0) == 4
         dict_entry = Dict(
@@ -40,9 +39,8 @@ function lpo2df!(mu::Float64, x0::Vector, period::Float64, m1::Int, m2::Int, lp:
             "sv_vx" => x0[3],
             "sv_vy" => x0[4],
             "period" => period,
-            "m1" => m1,
-            "m2" => m2,
-            "family" => familyname
+            "family" => familyname,
+            "jacobi" => jacobiConstant(mu, x0),
         )
     else
         throw(ArgumentError(x0, "State-vector should be length 4 or 6!"))
@@ -126,7 +124,9 @@ end
 
 Construct family of LPO based on natural parameter continuation in period and single-shooting with xz-symmetry.
 """
-function get_family!(p, x0_guess::Vector, period_guess::Float64, dperiod::Float64, maxiter::Int; kwargs...)
+function get_family!(
+    p, x0_guess::Vector, period_guess::Float64, dperiod::Float64, maxiter::Int; kwargs...
+)
 
     # ---------- extract arguments ---------- #
     kwargs_dict = Dict(kwargs)
@@ -142,6 +142,8 @@ function get_family!(p, x0_guess::Vector, period_guess::Float64, dperiod::Float6
     method  = assign_from_kwargs(kwargs_dict, :method, Vern7())
     reltol  = assign_from_kwargs(kwargs_dict, :reltol, 1.e-12, Float64)
     abstol  = assign_from_kwargs(kwargs_dict, :abstol, 1.e-12, Float64)
+    planar_check = R3BP.assign_from_kwargs(kwargs_dict, :planar_check, true)
+    x_mag_max = R3BP.assign_from_kwargs(kwargs_dict, :x_mag_max, 3.0)
 
     mu = p[1]
 
@@ -192,9 +194,16 @@ function get_family!(p, x0_guess::Vector, period_guess::Float64, dperiod::Float6
             break
         end
 
-        if (abs(res_iter.x0[3]) < 1.e-8) && (abs(res_iter.x0[6]) < 1.e-8)
-            println("Stopping condition met at $i, period_guess = $period_guess ! (Planar hit)")
+        if (x_mag_max < abs(res_iter.x0[1]))
+            println("Stopping condition met at $i, |x| > $x_mag_max ! (> x max magnitude)")
             break
+        end
+
+        if planar_check == true
+            if (abs(res_iter.x0[3]) < 1.e-8) && (abs(res_iter.x0[6]) < 1.e-8)
+                println("Stopping condition met at $i, period_guess = $period_guess ! (Planar hit)")
+                break
+            end
         end
     end
     return df

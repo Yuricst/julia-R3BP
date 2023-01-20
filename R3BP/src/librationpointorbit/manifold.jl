@@ -33,29 +33,49 @@ end
 Identidy stable and unstable eigenvalue-eigenvector pair
 """
 function get_stable_unstable_eigvecs(λs, vs)
-    idx_stb_unstb = [];
-    for idx in 1:length( λs )
-        if abs(real(λs[idx]) - 1) > 1e-4 && imag(λs[idx])==0
-            push!(idx_stb_unstb, idx);
+    λs_real = []
+    for (idx,λ) in enumerate(λs)
+        if imag(λ) == 0
+            push!(λs_real, [idx, real(λ)])
         end
     end
+    λs_real = hcat(λs_real...)'
+    idx_λmin = Int(λs_real[argmin(λs_real[:,2]), 1])
+    idx_λmax = Int(λs_real[argmax(λs_real[:,2]), 1])
+    # get real parts
+    emin = real(λs[idx_λmin])
+    emax = real(λs[idx_λmax])
+    vmin = real(vs[:,idx_λmin])
+    vmax = real(vs[:,idx_λmax])
 
-    if length(idx_stb_unstb) > 0
-        if abs(λs[ idx_stb_unstb[1] ]) > abs(λs[ idx_stb_unstb[2] ])
-            eig_unstb = real( λs[ idx_stb_unstb[1] ] );
-            v_unstb   = real( vs[:, idx_stb_unstb[1] ] );
-            eig_stb   = real( λs[ idx_stb_unstb[2] ] );
-            v_stb     = real( vs[:, idx_stb_unstb[2] ] );
-        else
-            eig_unstb = real( λs[ idx_stb_unstb[2] ] );
-            v_unstb   = real( vs[:, idx_stb_unstb[2] ] );
-            eig_stb   = real( λs[ idx_stb_unstb[1] ] );
-            v_stb     = real( vs[:, idx_stb_unstb[1] ] );
-        end
-        return eig_unstb, eig_stb, v_unstb, v_stb
+    if (emin < 1.0) && (emax > 1.0)
+        return emax, emin, vmax, vmin
     else
         return 1.0, 1.0, 0.0, 0.0
     end
+    # idx_stb_unstb = [];
+    # for idx in 1:length( λs )
+    #     if abs(real(λs[idx]) - 1) > 1e-4 && imag(λs[idx])==0
+    #         push!(idx_stb_unstb, idx);
+    #     end
+    # end
+    #
+    # if length(idx_stb_unstb) > 0
+    #     if abs(λs[ idx_stb_unstb[1] ]) > abs(λs[ idx_stb_unstb[2] ])
+    #         eig_unstb = real( λs[ idx_stb_unstb[1] ] );
+    #         v_unstb   = real( vs[:, idx_stb_unstb[1] ] );
+    #         eig_stb   = real( λs[ idx_stb_unstb[2] ] );
+    #         v_stb     = real( vs[:, idx_stb_unstb[2] ] );
+    #     else
+    #         eig_unstb = real( λs[ idx_stb_unstb[2] ] );
+    #         v_unstb   = real( vs[:, idx_stb_unstb[2] ] );
+    #         eig_stb   = real( λs[ idx_stb_unstb[1] ] );
+    #         v_stb     = real( vs[:, idx_stb_unstb[1] ] );
+    #     end
+    #     return eig_unstb, eig_stb, v_unstb, v_stb
+    # else
+    #     return 1.0, 1.0, 0.0, 0.0
+    # end
 end
 
 
@@ -87,7 +107,8 @@ Obtain linear perturbation ϵ magnitude for manifolds
 # Arguments
     - `μ::Float64`: CR3BP parameter
 """
-function scale_ϵ(μ::Float64, x0, period::Float64, stable::Bool, monodromy, y0, lstar::Float64, relative_tol_manifold::Float64=0.1, absolute_tol_manifold_km::Float64=100.0)
+function scale_ϵ(μ::Float64, x0, period::Float64, stable::Bool, monodromy, y0, lstar::Float64,
+    relative_tol_manifold::Float64=0.1, absolute_tol_manifold_km::Float64=100.0)
     if length(x0)==4
         idx_pos_last = 2
     elseif length(x0)==6
@@ -196,6 +217,7 @@ function get_manifold(
     relative_tol_manifold    = assign_from_kwargs(kwargs_dict, :relative_tol_manifold, 0.1)
     absolute_tol_manifold_km = assign_from_kwargs(kwargs_dict, :absolute_tol_manifold_km, 100.0)
     verbosity = assign_from_kwargs(kwargs_dict, :verbosity, 0)
+    detailed_output = assign_from_kwargs(kwargs_dict, :detailed_output, false)
 
     # ODE settings
     reltol = assign_from_kwargs(kwargs_dict, :reltol, 1.e-12)
@@ -280,7 +302,15 @@ function get_manifold(
     ensemble_prob = EnsembleProblem(prob_branch, prob_func=prob_func)
 
     # return output of EnsembleProblem and perturbed ic vector
-    return solve(ensemble_prob, method, EnsembleThreads(), trajectories=n, callback=callback, method=method, reltol=reltol, abstol=abstol), x0_ptb_vec
+    sim = solve(
+        ensemble_prob, method, EnsembleThreads(), trajectories=n,
+        callback=callback, method=method, reltol=reltol, abstol=abstol
+    )
+    if detailed_output == false
+        return sim, x0_ptb_vec
+    else
+        return sim, monodromy
+    end
 end
 
 
@@ -306,11 +336,12 @@ This dispatch utilizes pre-computed perturbation x's.
     `EnsembleSolution`: ODE solution of `n` discrete manifold branches
 """
 function get_manifold(
-            x0_ptb_vec::Array{Float64,1},
-            μ::Float64,
-            nsv::Int,
-            tf::Float64,
-            kwargs...)
+    x0_ptb_vec::Array{Float64,1},
+    μ::Float64,
+    nsv::Int,
+    tf::Float64,
+    kwargs...
+)
     # ---------- extract arguments ---------- #
     kwargs_dict = Dict(kwargs)
     # main manifold options
@@ -354,8 +385,8 @@ end
 # ----------------------------------------------------------------------------------- #
 # function for extracting poincare section
 struct Struct_out_PoincareSection
-    u
-    t
+    u::Matrix{Float64}
+    t::Vector{Float64}
 end
 
 

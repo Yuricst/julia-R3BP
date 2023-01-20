@@ -3,9 +3,6 @@ LPO family handling
 """
 
 
-function foobar(el)
-    println(el)
-end
 
 """
     lpo2df!(mu::Float64, x0::Vector, period::Float64, m1::Int, m2::Int, lp::Int, familyname::String="default", system::String="CR3BP"; kwargs...)
