@@ -10,7 +10,7 @@ Function associated with manifold
 
 Extract STM from solution of ODEProblem at final index
 """
-function get_stm(sol::ODESolution, nsv::Int)
+function get_stm(sol, nsv::Int)
     return transpose( reshape(sol.u[end][nsv+1:end], (nsv, nsv)) )
 end
 
@@ -20,7 +20,7 @@ end
 
 Extract STM from solution of ODEProblem at index=idx
 """
-function get_stm(sol::ODESolution, nsv::Int, idx::Int)
+function get_stm(sol, nsv::Int, idx::Int)
     return transpose( reshape(sol.u[idx][nsv+1:end], (nsv, nsv)) )
 end
 
@@ -144,12 +144,16 @@ function scale_ϵ(μ::Float64, x0, period::Float64, stable::Bool, monodromy, y0,
 
         if stable==true   # stable case
             #prop_manif_out = propagate_cr3bp(μ, x0_manifold, -period)
-            prob_estErr = ODEProblem(rhs_pcr3bp_sv!, x0_manifold, (0, -period), (μ));
+            prob_estErr = ODEProblem(rhs_pcr3bp_sv!, x0_manifold, (0, -period), (μ),
+                method=Tsit5(), reltol=1e-11, abstol=1e-11
+            );
         else               # unstable case
             #prop_manif_out = propagate_cr3bp(μ, x0_manifold, period)
-            prob_estErr = ODEProblem(rhs_pcr3bp_sv!, x0_manifold, (0, period), (μ));
+            prob_estErr = ODEProblem(rhs_pcr3bp_sv!, x0_manifold, (0, period), (μ),
+                method=Tsit5(), reltol=1e-11, abstol=1e-11
+            );
         end
-        sol = solve(prob_estErr, Tsit5(), reltol=1e-11, abstol=1e-11);
+        sol = solve(prob_estErr);
 
         # actual position error
         propPositionError = norm(sol.u[end][1:idx_pos_last] - x0[1:idx_pos_last])
@@ -247,8 +251,8 @@ function get_manifold(
 
         # obtain STM history
         x0_stm = vcat(x0, reshape(I(nsv), (nsv^2,)))[:]
-        prob_lpo = ODEProblem(rhs_stm!, x0_stm, period, (μ))
-        sol = solve(prob_lpo, method, reltol=reltol, abstol=abstol, saveat=LinRange(0, period, n+1))
+        prob_lpo = ODEProblem(rhs_stm!, x0_stm, period, (μ), method=method, reltol=reltol, abstol=abstol)
+        sol = solve(prob_lpo, saveat=LinRange(0, period, n+1))
 
         # get monodromy matrix
         monodromy = get_stm(sol, nsv)

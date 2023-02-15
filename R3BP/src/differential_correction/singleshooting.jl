@@ -124,15 +124,23 @@ function ssdc_periodic_xzplane(p, x0::Vector, period0::Real; kwargs...)
     #if cmp(stm_option, "ad")==0
     if cmp(system, "cr3bp")==0
         if cmp(stm_option, "ad")==0
-            prob_base = ODEProblem(R3BP.rhs_cr3bp_sv!, x0iter, period/2, p);
+            prob_base = ODEProblem(R3BP.rhs_cr3bp_sv!, x0iter, period/2, p,
+                method=method, reltol=reltol, abstol=abstol
+            );
         else
-            prob_base = ODEProblem(R3BP.rhs_cr3bp_svstm!, x0iter, period/2, p);
+            prob_base = ODEProblem(R3BP.rhs_cr3bp_svstm!, x0iter, period/2, p,
+                method=method, reltol=reltol, abstol=abstol
+            );
         end
     elseif cmp(system, "er3bp")==0
         if cmp(stm_option, "ad")==0
-            prob_base = ODEProblem(R3BP.rhs_er3bp_sv!, x0iter, period/2, p);
+            prob_base = ODEProblem(R3BP.rhs_er3bp_sv!, x0iter, period/2, p,
+                method=method, reltol=reltol, abstol=abstol
+            );
         else
-            prob_base = ODEProblem(R3BP.rhs_er3bp_svstm!, x0iter, period/2, p);
+            prob_base = ODEProblem(R3BP.rhs_er3bp_svstm!, x0iter, period/2, p,
+                method=method, reltol=reltol, abstol=abstol
+            );
         end
     end
     #end
@@ -155,7 +163,7 @@ function ssdc_periodic_xzplane(p, x0::Vector, period0::Real; kwargs...)
         end
 
         # solve ODE problem
-        sol = solve(prob, method, reltol=reltol, abstol=abstol);
+        sol = solve(prob);
         # final state and STM
         statef = sol.u[end][1:length(x0iter)]
 
@@ -288,7 +296,7 @@ Function to remake ODE problem and get final state
 """
 function get_statef(prob, x0, tf, p)
     _prob = remake(prob, u0=x0, p=p)
-    sol = solve(_prob, Tsit5(), saveat=tf)
+    sol = solve(_prob, saveat=tf)
     sol.u[end]
 end
 
