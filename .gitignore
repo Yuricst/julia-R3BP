@@ -31,3 +31,5 @@ Manifest.toml
 
 # output files from PACE
 *.out
+*.svg
+*.pdf

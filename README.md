@@ -68,7 +68,6 @@ then define parameters for generating manifold
 num_branch = 100;
 stability = true;
 ϵ = 1e-5  # or set to nothing to let the function scale based on LPO stability
-lstar = 384400.
 tf = -5.0
 ```
 and finally the function wraps DifferentialEquations' `EnsembleProblem()`

@@ -9,30 +9,36 @@ using DifferentialEquations.EnsembleAnalysis
 using ForwardDiff
 using Printf
 using DataFrames
+using ProgressMeter
+using JSON
+
+using AstrodynamicsBase
+#using Plots
 
 # defining system parameters
-include("get_gm.jl")
-include("get_semiMajorAxis.jl")
+#include("get_gm.jl")
+#include("get_semiMajorAxis.jl")
 include("get_cr3bp_param.jl")
 
 # basic functions for CR3BP
 include("lagrangePoints.jl")
 include("jacobiConstant.jl")
-include("equationsOfMotion.jl")
-include("lpo_stability.jl")
+include("ode/equationsOfMotion.jl")
+include("librationpointorbit/lpo_stability.jl")
 
 # LPO & manifold
-include("lpo_family.jl")
-include("manifold.jl")
-include("analyticalCollinearHalo.jl")
+include("librationpointorbit/lpo_family.jl")
+include("librationpointorbit/manifold.jl")
+include("librationpointorbit/analyticalCollinearHalo.jl")
+include("librationpointorbit/stretching.jl")
 
 # differential correction
-include("differential_correction/differentialCorrection_singleshooting.jl")
+include("differential_correction/singleshooting.jl")
 include("differential_correction/multipleshooting.jl")
 
 # equations of motion for trajectory design
-include("deltaV_transcription.jl")
-include("equationsOfMotionWithThrust.jl")
+include("ode/deltaV_transcription.jl")
+include("ode/equationsOfMotionWithThrust.jl")
 
 # miscellaneous
 include("misc_tools.jl")

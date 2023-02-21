@@ -17,8 +17,10 @@ For body names, refer to: https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/req/
     (lst): lst of GM values
 
 # Examples
-    >>> get_gm("399", "301")
-    [398600.435436096, 4902.800066163796]
+```julia-repl
+julia> get_gm("399", "301")
+[398600.435436096, 4902.800066163796]
+```
 """
 function get_gm(args...)
     # call gm values
@@ -26,7 +28,7 @@ function get_gm(args...)
     gm_out = []
     for naifID in args
         bdyname = "BODY" * naifID * "_GM"
-        push!(gm_out, de431gm[bdyname] )
+        push!(gm_out, de431gm[bdyname])
     end
     return gm_out
 end
