@@ -38,11 +38,11 @@ function get_lpo_svd(p, x0_lpo::Vector, period::Float64, n::Int, direction::Stri
     end
 
     # propagate LPO by full period and get initial states
-    prob_lpo = ODEProblem(rhs!, x0_lpo, period, p)
-    sol_x0s = solve(prob_lpo, method, reltol=reltol, abstol=abstol, saveat=LinRange(0, period, n+1))
+    prob_lpo = ODEProblem(rhs!, x0_lpo, period, p, method=method, reltol=reltol, abstol=abstol)
+    sol_x0s = solve(prob_lpo, saveat=LinRange(0, period, n+1))
 
     x0_stm = vcat(x0_lpo, reshape(I(nsv), (nsv^2,)))[:]
-    prob_lpo_stm = ODEProblem(rhs_stm!, x0_stm, period, p)
+    prob_lpo_stm = ODEProblem(rhs_stm!, x0_stm, period, p, method=method, reltol=reltol, abstol=abstol)
     Fs = []
     x0_departures = []
 
@@ -53,7 +53,7 @@ function get_lpo_svd(p, x0_lpo::Vector, period::Float64, n::Int, direction::Stri
             prob_lpo_stm = remake(prob_lpo_stm; u0=x0_stm)
         end
         # solve problem
-        sol = solve(prob_lpo_stm, method, reltol=reltol, abstol=abstol)
+        sol = solve(prob_lpo_stm)
         monodromy = R3BP.get_stm(sol, nsv)
         # perform SVD & store
         if direction == "forward"

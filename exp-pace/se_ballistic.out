@@ -1,0 +1,107 @@
+---------------------------------------
+Begin PBS Prologue Thu Jul  8 00:09:22 EDT 2021
+Job ID:     2292662.sched-torque.pace.gatech.edu
+User ID:    yshimane3
+Job name:   SE_ballistic
+Queue:      inferno
+End PBS Prologue Thu Jul  8 00:09:22 EDT 2021
+---------------------------------------
+
+Lmod is automatically replacing "intel/19.0.5" with "gcc/8.3.0".
+
+
+Due to MODULEPATH changes, the following have been reloaded:
+  1) mvapich2/2.3.2
+
+/var/spool/torque/mom_priv/jobs/2292662.sched-torque.pace.gatech.edu.SC: line 15: 72972 Killed                  julia -p 16 search-SEsystem-LET-ballistic2.jl
+---------------------------------------
+Begin PBS Epilogue Thu Jul  8 04:58:04 EDT 2021
+Job ID:     2292662.sched-torque.pace.gatech.edu
+User ID:    yshimane3
+Job name:   SE_ballistic
+Resources:  nodes=2:ppn=8,pmem=2gb,walltime=24:00:00,neednodes=2:ppn=8
+Rsrc Used:  cput=01:42:08,vmem=57674864kb,walltime=04:48:40,mem=16777092kb,energy_used=0
+Queue:      inferno
+Nodes:     
+atl1-1-02-010-24-r.pace.gatech.edu atl1-1-02-010-27-r.pace.gatech.edu
+End PBS Epilogue Thu Jul  8 04:58:04 EDT 2021
+---------------------------------------
+---------------------------------------
+Begin PBS Prologue Thu Jul  8 11:29:55 EDT 2021
+Job ID:     2295458.sched-torque.pace.gatech.edu
+User ID:    yshimane3
+Job name:   SE_ballistic
+Queue:      inferno
+End PBS Prologue Thu Jul  8 11:29:55 EDT 2021
+---------------------------------------
+
+Lmod is automatically replacing "intel/19.0.5" with "gcc/8.3.0".
+
+
+Due to MODULEPATH changes, the following have been reloaded:
+  1) mvapich2/2.3.2
+
+Worker 15 terminated.
+Worker 12 terminated.
+Worker 22 terminated.
+ERROR: LoadError: ProcessExitedException(12)
+
+...and 2 more exceptions.
+
+Stacktrace:
+ [1] sync_end(c::Channel{Any})
+   @ Base ./task.jl:369
+ [2] macro expansion
+   @ ./task.jl:388 [inlined]
+ [3] _require_callback(mod::Base.PkgId)
+   @ Distributed /var/pace-apps/temp/spack/var/0.13/stage/kmanalo3/spack-stage-julia-1.6.1-zm65sp5ygm56hdp6csnsxqjc7qea6ijo/spack-src/usr/share/julia/stdlib/v1.6/Distributed/src/Distributed.jl:76
+ [4] #invokelatest#2
+   @ ./essentials.jl:708 [inlined]
+ [5] invokelatest
+   @ ./essentials.jl:706 [inlined]
+ [6] require(uuidkey::Base.PkgId)
+   @ Base ./loading.jl:920
+ [7] require(into::Module, mod::Symbol)
+   @ Base ./loading.jl:901
+in expression starting at /storage/coda1/p-kho34/0/yshimane3/paceyuri/julia-R3BP/experiments/search-SEsystem-LET-ballistic2.jl:5
+---------------------------------------
+Begin PBS Epilogue Thu Jul  8 11:32:25 EDT 2021
+Job ID:     2295458.sched-torque.pace.gatech.edu
+User ID:    yshimane3
+Job name:   SE_ballistic
+Resources:  nodes=4:ppn=8,pmem=2gb,walltime=24:00:00,neednodes=4:ppn=8
+Rsrc Used:  cput=00:13:08,vmem=72993164kb,walltime=00:02:28,mem=16757448kb,energy_used=0
+Queue:      inferno
+Nodes:     
+atl1-1-02-010-16-r.pace.gatech.edu atl1-1-02-010-17-r.pace.gatech.edu 
+atl1-1-02-010-19-r.pace.gatech.edu
+End PBS Epilogue Thu Jul  8 11:32:25 EDT 2021
+---------------------------------------
+---------------------------------------
+Begin PBS Prologue Thu Jul  8 15:33:10 EDT 2021
+Job ID:     2297273.sched-torque.pace.gatech.edu
+User ID:    yshimane3
+Job name:   SE_ballistic
+Queue:      inferno
+End PBS Prologue Thu Jul  8 15:33:11 EDT 2021
+---------------------------------------
+
+Lmod is automatically replacing "intel/19.0.5" with "gcc/8.3.0".
+
+
+Due to MODULEPATH changes, the following have been reloaded:
+  1) mvapich2/2.3.2
+
+/var/spool/torque/mom_priv/jobs/2297273.sched-torque.pace.gatech.edu.SC: line 15: 155316 Killed                  julia -p 16 search-SEsystem-LET-ballistic2.jl
+---------------------------------------
+Begin PBS Epilogue Thu Jul  8 21:20:54 EDT 2021
+Job ID:     2297273.sched-torque.pace.gatech.edu
+User ID:    yshimane3
+Job name:   SE_ballistic
+Resources:  nodes=2:ppn=8,pmem=2gb,walltime=24:00:00,neednodes=2:ppn=8
+Rsrc Used:  cput=02:01:47,vmem=57459896kb,walltime=05:47:42,mem=16777120kb,energy_used=0
+Queue:      inferno
+Nodes:     
+atl1-1-02-010-12-r.pace.gatech.edu atl1-1-02-010-14-l.pace.gatech.edu
+End PBS Epilogue Thu Jul  8 21:20:54 EDT 2021
+---------------------------------------
