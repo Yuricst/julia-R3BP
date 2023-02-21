@@ -43,8 +43,8 @@ T = 3.385326412831325;
 
 tspan = (0.0, T)
 p = (mu)
-prob = ODEProblem(R3BP.rhs_cr3bp_sv!, X0, tspan, p)
-sol = solve(prob, Tsit5(), reltol=1e-11, abstol=1e-11)
+prob = ODEProblem(R3BP.rhs_cr3bp_sv!, X0, tspan, p, method=Tsit5(), reltol=1e-12, abstol=1e-12)
+sol = solve(prob)
 
 # plot using the sol object
 plot(sol, vars=(1,2,3))
