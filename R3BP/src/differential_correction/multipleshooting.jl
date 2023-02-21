@@ -118,9 +118,14 @@ function multiple_shooting(prob_stm::ODEProblem, x0s::Array, tofs::Array, tolDC:
 
         # propagate ODE nodes and update DF
         if use_ensemble == false
-            multiple_shooting_propagate_sequential!(df, svf, prob_stm, rhs!, p, n, n_sv, n_propagated, x0_vec, tofs, fix_time, method, reltol, abstol)
+            multiple_shooting_propagate_sequential!(
+				df, svf, prob_stm, rhs!, p, n, n_sv, n_propagated, x0_vec, tofs, fix_time
+			)
         else
-            multiple_shooting_propagate_ensemble!(df, svf, prob_stm, rhs!, p, prob_func, ensemble_method, n, n_sv, n_propagated, x0_vec, tofs, fix_time, method, reltol, abstol)
+            multiple_shooting_propagate_ensemble!(
+				df, svf, prob_stm, rhs!, p, prob_func, ensemble_method, n, n_sv,
+				n_propagated, x0_vec, tofs, fix_time
+			)
         end
 
         # update error vector F
@@ -151,7 +156,11 @@ end
 
 Propagates nodes and mutates DF and xfs; solved sequentially using `remake()`
 """
-function multiple_shooting_propagate_sequential!(df::Matrix{Float64}, svf::Vector{Float64}, prob_stm::ODEProblem, rhs!, p, n::Int, n_sv::Int, n_propagated::Int, x0_vec::Vector{Float64}, tofs::Array, fix_time::Bool, method, reltol::Float64, abstol::Float64)
+function multiple_shooting_propagate_sequential!(
+	df::Matrix{Float64}, svf::Vector{Float64}, prob_stm::ODEProblem,
+	rhs!, p, n::Int, n_sv::Int, n_propagated::Int, x0_vec::Vector{Float64},
+	tofs::Array, fix_time::Bool,
+)
     # re-make ODE problem and integrate until tofs[ix]
     for i = 1:n_propagated
 
@@ -163,7 +172,7 @@ function multiple_shooting_propagate_sequential!(df::Matrix{Float64}, svf::Vecto
             tprop = x0_vec[n_sv*n+i]
         end
         _prob = remake(prob_stm; tspan=(0.0, tprop), u0=x0_stm)
-        sol = DifferentialEquations.solve(_prob, method, reltol=reltol, abstol=abstol)
+        sol = DifferentialEquations.solve(_prob)
 
         # append to vector of propagation results
         svf[(i-1)*n_sv + 1 : i*(n_sv)] = sol.u[end][1:n_sv]
@@ -188,10 +197,13 @@ end
 
 Propagates nodes and mutates DF and svf; solved sequentially using `ensembleSimulation()`
 """
-function multiple_shooting_propagate_ensemble!(df::Matrix{Float64}, svf::Vector{Float64}, prob_stm::ODEProblem, rhs!, p, prob_func, ensemble_method, n::Int, n_sv::Int, n_propagated::Int, x0_vec::Vector{Float64}, tofs::Array, fix_time::Bool, method, reltol::Float64, abstol::Float64)
+function multiple_shooting_propagate_ensemble!(
+	df::Matrix{Float64}, svf::Vector{Float64}, prob_stm::ODEProblem,
+	rhs!, p, prob_func, ensemble_method, n::Int, n_sv::Int, n_propagated::Int,
+	x0_vec::Vector{Float64}, tofs::Array, fix_time::Bool)
 	# solve ensemble problem
 	ensemble_prob = EnsembleProblem(prob_stm, prob_func=prob_func)
-	sim = solve(ensemble_prob, method, ensemble_method, trajectories=n_propagated, reltol=reltol, abstol=abstol);
+	sim = solve(ensemble_prob, method, ensemble_method; trajectories=n_propagated);
 
 	# get iterable of final states
 	#xf_iter = get_timestep(sim, END)

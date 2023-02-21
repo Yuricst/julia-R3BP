@@ -222,6 +222,7 @@ function get_manifold(
     absolute_tol_manifold_km = assign_from_kwargs(kwargs_dict, :absolute_tol_manifold_km, 100.0)
     verbosity = assign_from_kwargs(kwargs_dict, :verbosity, 0)
     detailed_output = assign_from_kwargs(kwargs_dict, :detailed_output, false)
+    ensemblealg = assign_from_kwargs(kwargs_dict, :ensemblealg, EnsembleThreads())
 
     # ODE settings
     reltol = assign_from_kwargs(kwargs_dict, :reltol, 1.e-12)
@@ -307,8 +308,8 @@ function get_manifold(
 
     # return output of EnsembleProblem and perturbed ic vector
     sim = solve(
-        ensemble_prob, method, EnsembleThreads(), trajectories=n,
-        callback=callback, method=method, reltol=reltol, abstol=abstol
+        ensemble_prob, method, ensemblealg, trajectories=n,
+        #callback=callback, method=method, reltol=reltol, abstol=abstol
     )
     if detailed_output == false
         return sim, x0_ptb_vec

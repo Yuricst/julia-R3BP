@@ -63,9 +63,11 @@ end
 # construct initial ODE problem
 p = (CR3BP_param.mu)
 prob_stm = ODEProblem(R3BP.rhs_cr3bp_svstm!,
-    vcat(guess0.x0, reshape(I(6), (36,)))[:], guess0.period, p);
+    vcat(guess0.x0, reshape(I(6), (36,)))[:], guess0.period, p,
+    method=method, reltol=reltol, abstol=abstol
+);
 # propagate initial guess for plotting later
-sol = solve(prob_stm, method, reltol=reltol, abstol=abstol)
+sol = solve(prob_stm)
 solig = R3BP.sol_to_arrays(sol);   # obtain state-history as array for plotting
 
 
@@ -82,8 +84,8 @@ x0_conv, tof_conv, convflag = R3BP.multiple_shooting(prob_stm, x0s, tofs, tolDC;
     maxiter=8, reltol=reltol, abstol=abstol, method=method)
 
 # propagate converged result of multiple-shooting
-prob = ODEProblem(R3BP.rhs_cr3bp_sv!, x0_conv[1:6], sum(tof_conv), p)
-sol = solve(prob, method, reltol=reltol, abstol=abstol, use_ensemble=true)
+prob = ODEProblem(R3BP.rhs_cr3bp_sv!, x0_conv[1:6], sum(tof_conv), p, method=method, reltol=reltol, abstol=abstol)
+sol = solve(prob)
 solmsdc = R3BP.sol_to_arrays(sol.u);   # obtain state-history as array for plotting
 
 
