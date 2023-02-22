@@ -26,6 +26,16 @@ function separate_top_bottom(xs, ys)
             vcat(ys[flipped[2]+1:end], ys[1:flipped[1]])[:]
         )
         side2 = hcat(xs[flipped[1]+1:flipped[2]], ys[flipped[1]+1:flipped[2]])
+	elseif length(flipped)==3
+		println(flipped)
+        side1 = hcat(
+            vcat(xs[1:flipped[1]], ys[1:flipped[1]])[:],
+			vcat(xs[flipped[2]+1:flipped[3]], ys[flipped[2]+1:flipped[3]])[:],
+        )
+        side2 = hcat(
+			vcat(xs[flipped[1]+1:flipped[2]], ys[flipped[1]+1:flipped[2]])[:],
+			vcat(xs[flipped[3]+1:end], ys[flipped[3]+1:end])[:],
+		)
     end
     # order them
     side1 = side1[sortperm(side1[:,1]), :]
@@ -50,10 +60,10 @@ function interpolate_ps(ps, i_strip::Int=2, n_interval::Int=20, n_strip::Int=8)
 	    anchors = LinRange(side1[1,1], side1[end,1], n_interval)
 	    spl1 = Spline1D(side1[:,1], side1[:,2])
 	    y1s = evaluate(spl1, anchors)
-	    
+
 	    spl2 = Spline1D(side2[:,1], side2[:,2])
 	    y2s = evaluate(spl2, anchors)
-	    
+
 	    # get strips
 	    strips = Dict()
 	    for j = 1:n_strip
@@ -106,7 +116,7 @@ Root-solve strip of Poincare-section for intersection
 function get_strips(
     strips_list, mu::Real, r2_threshold_min::Real, tf_fwd::Real=5.0,
     method=Tsit5(), reltol=1e-12, abstol=1e-12,
-) 
+)
 	# create events
 	condition_r2hit = function (u,t,integrator)
 	    r2 = sqrt((u[1]-(1-mu))^2 + u[2]^2 + u[3]^2)
@@ -132,7 +142,7 @@ function get_strips(
     # prepare strips
     strip_traj_list = []
 	perilunes_per_strip = []
-	@showprogress for _strip in strips_list  # length == n_strip
+	for _strip in strips_list  # length == n_strip
 	    traj_per_strip = []
 	    perilunes = Real[]
 	    for j = 1:length(strips_list[1][1])  # n_interval
@@ -145,7 +155,7 @@ function get_strips(
 	        push!(traj_per_strip, sol)
 	        push!(perilunes, find_perilune(sol, mu))
 	    end
-	    
+
 	    push!(strip_traj_list, traj_per_strip)
 	    push!(perilunes_per_strip, perilunes)
 	end
@@ -159,7 +169,7 @@ end
 Interpolate strip to find targeting trajectory
 """
 function interpolate_strip(
-    mu::Real, anchors::Union{Vector,LinRange}, strip_states::Vector, perilunes::Vector, 
+    mu::Real, anchors::Union{Vector,LinRange}, strip_states::Vector, perilunes::Vector,
     target_radius::Real, i_strip::Int, r2_threshold_min, tf_fwd::Real=5.0,
     verbose::Bool=false, prob_base=nothing,
     method=Tsit5(), reltol=1e-12, abstol=1e-12,
@@ -190,7 +200,7 @@ function interpolate_strip(
 	        method=method, reltol=reltol, abstol=abstol, callback=cbs,
 	    );
 	end
-    
+
     residual = function (anchor_var, get_state::Bool=false)
         #println("anchor_var: $anchor_var")
         _x0_interp = [evaluate(spl_state[j], anchor_var) for j = 1:6]
@@ -202,7 +212,7 @@ function interpolate_strip(
             return find_perilune(sol_anchor, mu, get_state) - target_radius
         end
     end
-    
+
     # iterate through sampled perilune-going locations
     state_target = Vector[]
     for i = 1:length(perilunes)-1
@@ -216,7 +226,7 @@ function interpolate_strip(
 	            println("Computed: ", residual(strip_states[i_strip][i+1]))
 	        end
             res_anchor = find_zero(
-                residual, 
+                residual,
                 (strip_states[i_strip][i], strip_states[i_strip][i+1]),
                 Bisection(), atol=1e-8, rtol=1e-8
             )
@@ -235,6 +245,10 @@ end
 
 
 
+"""
+Search perilune targetinf segments from Poincare section of a manifold.
+This is the highest-level function.
+"""
 function lpo2llo_target(
 	mu::Real,
 	X0_lpo,
@@ -248,7 +262,8 @@ function lpo2llo_target(
 	N_manif::Int=50,
 	tf_manif::Real=-10.0,
 	manif_cb=nothing,
-	verbose::Bool=true,
+	verbose::Bool=false,
+	use_pbar::Bool=true
 )
 	if isnothing(manif_cb)
 		r2_threshold = 1.0
@@ -267,6 +282,12 @@ function lpo2llo_target(
 	direction = "positive"
 	sim = R3BP.get_manifold(mu, X0_lpo, period, tf_manif, stability, N_manif, direction, manif_cb);
 
+	# check that all manifolds met condition
+	if (sum([sol.retcode == :Terminated for sol in sim]) == length(sim)) == false
+		println("Not all manifold branch met callback; consider changing callback or propagating manifold for longer!")
+		return []
+	end
+
 	# get poincare section
 	if verbose
 		println("Preparing Poincare Section...")
@@ -279,7 +300,11 @@ function lpo2llo_target(
 
 	# get states at LLO
 	states_llo = []
-	@showprogress for istrip = 1:length(perilunes_per_strip)
+	#pbar = Progress(length(perilunes_per_strip); showspeed=true)
+	if use_pbar
+		pbar = ProgressUnknown("Perilune strip targeting: ", spinner=true)
+	end
+	for istrip = 1:length(perilunes_per_strip)
 	    _states_llo = R3BP.interpolate_strip(
 	        mu, anchors, strips_list[istrip], perilunes_per_strip[istrip], target_radius,
 	        i_strip, r2_threshold_min, tf_fwd, verbose
@@ -289,6 +314,9 @@ function lpo2llo_target(
 	    else
 	        states_llo = vcat(states_llo, _states_llo)
 	    end
+		if use_pbar
+			ProgressMeter.next!(pbar, spinner="🌑🌒🌓🌔🌕🌖🌗🌘")
+		end
 	end
 	return states_llo
 end
