@@ -33,7 +33,9 @@ Generate analytical approx. of halo about collinear libration point
       ydot_analytic_synodic
       zdot_analytic_synodic
 """
-function halo_analytical_construct(mu::Float64, lp::Int, Az_km::Float64, lstar::Float64, northsouth::Int, phi::Real=0.0)
+function halo_analytical_construct(
+   mu::Float64, lp::Int, Az_km::Real, lstar::Real, northsouth::Int, phi::Real=0.0
+)
    # function to define lagrange points
    LP = lagrangePoints(mu)
 

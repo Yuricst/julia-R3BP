@@ -11,6 +11,8 @@ using Printf
 using DataFrames
 using ProgressMeter
 using JSON
+using Dierckx
+using Suppressor: @suppress_err
 
 using AstrodynamicsBase
 #using Plots
@@ -39,6 +41,9 @@ include("differential_correction/multipleshooting.jl")
 # equations of motion for trajectory design
 include("ode/deltaV_transcription.jl")
 include("ode/equationsOfMotionWithThrust.jl")
+
+# LET design
+include("let/perilune_targeting.jl")
 
 # miscellaneous
 include("misc_tools.jl")

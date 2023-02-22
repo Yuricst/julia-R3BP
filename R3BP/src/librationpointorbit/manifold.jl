@@ -33,49 +33,50 @@ end
 Identidy stable and unstable eigenvalue-eigenvector pair
 """
 function get_stable_unstable_eigvecs(λs, vs)
-    λs_real = []
-    for (idx,λ) in enumerate(λs)
-        if imag(λ) == 0
-            push!(λs_real, [idx, real(λ)])
-        end
-    end
-    λs_real = hcat(λs_real...)'
-    idx_λmin = Int(λs_real[argmin(λs_real[:,2]), 1])
-    idx_λmax = Int(λs_real[argmax(λs_real[:,2]), 1])
-    # get real parts
-    emin = real(λs[idx_λmin])
-    emax = real(λs[idx_λmax])
-    vmin = real(vs[:,idx_λmin])
-    vmax = real(vs[:,idx_λmax])
-
-    if (emin < 1.0) && (emax > 1.0)
-        return emax, emin, vmax, vmin
-    else
-        return 1.0, 1.0, 0.0, 0.0
-    end
-    # idx_stb_unstb = [];
-    # for idx in 1:length( λs )
-    #     if abs(real(λs[idx]) - 1) > 1e-4 && imag(λs[idx])==0
-    #         push!(idx_stb_unstb, idx);
+    # λs_real = []
+    # for (idx,λ) in enumerate(λs)
+    #     if imag(λ) == 0
+    #         push!(λs_real, [idx, real(λ)])
     #     end
     # end
+    # λs_real = hcat(λs_real...)'
+    # idx_λmin = Int(λs_real[argmin(λs_real[:,2]), 1])
+    # idx_λmax = Int(λs_real[argmax(λs_real[:,2]), 1])
+    # # get real parts
+    # emin = real(λs[idx_λmin])
+    # emax = real(λs[idx_λmax])
+    # vmin = real(vs[:,idx_λmin])
+    # vmax = real(vs[:,idx_λmax])
     #
-    # if length(idx_stb_unstb) > 0
-    #     if abs(λs[ idx_stb_unstb[1] ]) > abs(λs[ idx_stb_unstb[2] ])
-    #         eig_unstb = real( λs[ idx_stb_unstb[1] ] );
-    #         v_unstb   = real( vs[:, idx_stb_unstb[1] ] );
-    #         eig_stb   = real( λs[ idx_stb_unstb[2] ] );
-    #         v_stb     = real( vs[:, idx_stb_unstb[2] ] );
-    #     else
-    #         eig_unstb = real( λs[ idx_stb_unstb[2] ] );
-    #         v_unstb   = real( vs[:, idx_stb_unstb[2] ] );
-    #         eig_stb   = real( λs[ idx_stb_unstb[1] ] );
-    #         v_stb     = real( vs[:, idx_stb_unstb[1] ] );
-    #     end
-    #     return eig_unstb, eig_stb, v_unstb, v_stb
+    # if (emin < 1.0) && (emax > 1.0)
+    #     return emax, emin, vmax, vmin
     # else
     #     return 1.0, 1.0, 0.0, 0.0
     # end
+
+    idx_stb_unstb = [];
+    for idx in 1:length( λs )
+        if abs(real(λs[idx]) - 1) > 1e-4 && imag(λs[idx])==0
+            push!(idx_stb_unstb, idx);
+        end
+    end
+
+    if length(idx_stb_unstb) > 0
+        if abs(λs[ idx_stb_unstb[1] ]) > abs(λs[ idx_stb_unstb[2] ])
+            eig_unstb = real( λs[ idx_stb_unstb[1] ] );
+            v_unstb   = real( vs[:, idx_stb_unstb[1] ] );
+            eig_stb   = real( λs[ idx_stb_unstb[2] ] );
+            v_stb     = real( vs[:, idx_stb_unstb[2] ] );
+        else
+            eig_unstb = real( λs[ idx_stb_unstb[2] ] );
+            v_unstb   = real( vs[:, idx_stb_unstb[2] ] );
+            eig_stb   = real( λs[ idx_stb_unstb[1] ] );
+            v_stb     = real( vs[:, idx_stb_unstb[1] ] );
+        end
+        return eig_unstb, eig_stb, v_unstb, v_stb
+    else
+        return 1.0, 1.0, 0.0, 0.0
+    end
 end
 
 
@@ -159,7 +160,8 @@ function scale_ϵ(μ::Float64, x0, period::Float64, stable::Bool, monodromy, y0,
         propPositionError = norm(sol.u[end][1:idx_pos_last] - x0[1:idx_pos_last])
         #la.norm( prop_manif_out["statef"][0:3] - stateP[0:3] )
 
-        if abs( (propPositionError - predictedError)/propPositionError ) > relative_tol_manifold && abs( propPositionError - predictedError ) > absolute_tol_manifold
+        if abs( (propPositionError - predictedError)/propPositionError ) > relative_tol_manifold &&
+            abs( propPositionError - predictedError ) > absolute_tol_manifold
             break
         else
             # else store solution largest epsilon allowed
@@ -170,267 +172,335 @@ function scale_ϵ(μ::Float64, x0, period::Float64, stable::Bool, monodromy, y0,
 end
 
 
-## manifold functions
-
-# struct WarmManifold
-#     x0_ptb_vec::Array{Float64,1}
-#     n::Int
-#     nsv::Int
-#     μ::Float64
-#     rhs!
-# end
-
 """
-    get_manifold(
-            μ::Float64,
-            x0::Array,
-            period::Float64,
-            tf::Float64,
-            stable::Bool;
-            kwargs...)
-
-Function to obtain manifold of LPO
-
-# Arguments
-    - `μ::Float64`:: R3BP parameter
-    - `x0::Array`: LPO state
-    - `period::Float64`: LPO period
-    - `tf::Float64`: time of flight of manifold
-    - `stable::Bool`: true for stable manifold, false for unstable manifold
-    - `xdir::String`: direction of manifold, "positive" or "negative" along x-axis
+Construct manifolds
 
 # Returns
-    `EnsembleSolution`: ODE solution of `n` discrete manifold branches
-    `array`: x0_ptb_vec
+- `sim::Vector`: vector of `ODESolution`
 """
 function get_manifold(
-            μ::Float64,
-            x0::Array,
-            period::Float64,
-            tf::Float64,
-            stable::Bool;
-            kwargs...)
-    # ---------- extract arguments ---------- #
-    kwargs_dict = Dict(kwargs)
-    # main manifold options
-    xdir     = assign_from_kwargs(kwargs_dict, :xdir, "positive")
-    n        = assign_from_kwargs(kwargs_dict, :n, 50)
-    callback = assign_from_kwargs(kwargs_dict, :callback, nothing)
-    ϵ      = assign_from_kwargs(kwargs_dict, :ϵ, nothing)
-    lstar    = assign_from_kwargs(kwargs_dict, :lstar, 1.0)
-    relative_tol_manifold    = assign_from_kwargs(kwargs_dict, :relative_tol_manifold, 0.1)
-    absolute_tol_manifold_km = assign_from_kwargs(kwargs_dict, :absolute_tol_manifold_km, 100.0)
-    verbosity = assign_from_kwargs(kwargs_dict, :verbosity, 0)
-    detailed_output = assign_from_kwargs(kwargs_dict, :detailed_output, false)
-    ensemblealg = assign_from_kwargs(kwargs_dict, :ensemblealg, EnsembleThreads())
-
-    # ODE settings
-    reltol = assign_from_kwargs(kwargs_dict, :reltol, 1.e-12)
-    abstol = assign_from_kwargs(kwargs_dict, :abstol, 1.e-12)
-    method = assign_from_kwargs(kwargs_dict, :method, Tsit5())
-
-    # warm-start options
-    x0_ptb_vec = assign_from_kwargs(kwargs_dict, :wm, nothing)
-
-    __print_verbosity("========== Manifold Setting ==========", verbosity, 0)
-    __print_verbosity("   xdir: $xdir\n   Stable: $stable", verbosity, 0)
-
-    # ---------- propagate c0 by one full period with STM ---------- #
-    nsv = length(x0)
-    if nsv==4
-        rhs!     = rhs_pcr3bp_sv!
-        rhs_stm! = rhs_pcr3bp_svstm!
-    elseif nsv==6
-        rhs!     = rhs_cr3bp_sv!
-        rhs_stm! = rhs_cr3bp_svstm!
-    else
-        error("x0 should be length 4 or 6!")
-    end
-
-    # if no WarmManifold is provided, compute parameters
-    if isnothing(x0_ptb_vec) == true
-
-        # obtain STM history
-        x0_stm = vcat(x0, reshape(I(nsv), (nsv^2,)))[:]
-        prob_lpo = ODEProblem(rhs_stm!, x0_stm, period, (μ), method=method, reltol=reltol, abstol=abstol)
-        sol = solve(prob_lpo, saveat=LinRange(0, period, n+1))
-
-        # get monodromy matrix
-        monodromy = get_stm(sol, nsv)
-
-        # get eigenvectors at initial state
-        y0 = get_eigenvector(monodromy, stable, verbosity)
-
-        # define ϵ (linear perturbation)
-        if isnothing(ϵ)
-            ϵ = scale_ϵ(μ, x0, period, stable, monodromy, y0, lstar, relative_tol_manifold, absolute_tol_manifold_km)
-        end
-        # decide sign of ϵ based on xdir
-        if cmp(xdir, "positive")==0
-            if y0[1] < 0.0
-                ϵ_corr = -abs(ϵ)
-            else
-                ϵ_corr =  abs(ϵ)
-            end
-        elseif cmp(xdir, "negative")==0
-            if y0[1] > 0.0
-                ϵ_corr = -abs(ϵ)
-            else
-                ϵ_corr =  abs(ϵ)
-            end
-        else
-            error("xdir should be \"positive\" or \"negative\"")
-        end
-        __print_verbosity("Using linear perturbation ϵ = $ϵ", verbosity, 0)
-
-        # ---------- construct and append initial condition ---------- #
-        x0_ptb_vec = zeros(n*nsv)
-        for i in 1:n
-            # map eigenvector (y = stm*y0)
-            y_transcribed = get_stm(sol, nsv, i) * y0
-            # construct linearly perturbed state
-            x0_ptb_vec[1+(i-1)*nsv : i*nsv] = sol.u[i][1:nsv] + ϵ_corr*y_transcribed/norm(y_transcribed)
-        end
-    else
-        __print_verbosity("Warm-starting EnsembleProblem", verbosity, 0)
-    end
-
-    # define base ODE problem for manifold branch
-    prob_branch = ODEProblem(rhs!, x0_ptb_vec[1:nsv], tf, (μ))
-
-    # define remake function
-    function prob_func(prob, i, repeat)
-        remake(prob, u0=x0_ptb_vec[1+(i-1)*nsv : i*nsv])
-    end
-
-    # construct Ensemble Problem
-    ensemble_prob = EnsembleProblem(prob_branch, prob_func=prob_func)
-
-    # return output of EnsembleProblem and perturbed ic vector
-    sim = solve(
-        ensemble_prob, method, ensemblealg, trajectories=n,
-        #callback=callback, method=method, reltol=reltol, abstol=abstol
-    )
-    if detailed_output == false
-        return sim, x0_ptb_vec
-    else
-        return sim, monodromy
-    end
-end
-
-
-
-"""
-    get_manifold(
-        x0_ptb_vec::Array{Float64,1},
-        μ::Float64,
-        nsv::Int,
-        tf::Float64,
-        kwargs...)
-
-Function to obtain manifold of LPO.
-This dispatch utilizes pre-computed perturbation x's.
-
-# Arguments
-    - `x0_ptb_vec::Array{Float64,1}`: array of branch-points x0's, length (num. of branches)*(state-vector length)
-    - `μ::Float64`:: R3BP parameter
-    - `nsv::Int`: number of elements in state-vector
-    - `tf::Float64`: time of flight of manifold
-
-# Returns
-    `EnsembleSolution`: ODE solution of `n` discrete manifold branches
-"""
-function get_manifold(
-    x0_ptb_vec::Array{Float64,1},
-    μ::Float64,
-    nsv::Int,
-    tf::Float64,
-    kwargs...
+    mu::Real, state0, period, tf, stable::Bool=true, N::Int=50,
+    xdir::String="positive", cb=nothing, ϵ=nothing, lstar::Real=384400.0,
 )
-    # ---------- extract arguments ---------- #
-    kwargs_dict = Dict(kwargs)
-    # main manifold options
-    callback = assign_from_kwargs(kwargs_dict, :callback, nothing)
-    # ODE settings
-    reltol = assign_from_kwargs(kwargs_dict, :reltol, 1.e-12)
-    abstol = assign_from_kwargs(kwargs_dict, :abstol, 1.e-12)
-    method = assign_from_kwargs(kwargs_dict, :method, Tsit5())
-    verbosity = assign_from_kwargs(kwargs_dict, :verbosity, 0)
+    #@assert (tf<0 && stable==true) || (tf>0 && stable=false) "check sign of tf!"
+    state0_stm = vcat(state0, reshape(I(6), (6^2,)))[:]
+    prob_stm = ODEProblem(
+        R3BP.rhs_cr3bp_svstm!,
+        vcat(state0, reshape(I(6), (6^2,)))[:],
+        [0, period],
+        [mu,],
+        method=Tsit5(), reltol=1e-12, abstol=1e-12, saveat=LinRange(0, period, N+1)
+    )
+    sol_stm  = solve(prob_stm);
 
-    __print_verbosity("Warm-starting EnsembleProblem", verbosity, 0)
-
-    # get problem rhs function and dimension
-    if nsv==4
-        rhs!     = rhs_pcr3bp_sv!
-        rhs_stm! = rhs_pcr3bp_svstm!
-    elseif nsv==6
-        rhs!     = rhs_cr3bp_sv!
-        rhs_stm! = rhs_cr3bp_svstm!
+    monodromy = R3BP.get_stm(sol_stm, 6)
+    λs, vs = eigvals(monodromy), eigvecs(monodromy)
+    eig_unstb, eig_stb, v_unstb, v_stb = R3BP.get_stable_unstable_eigvecs(λs, vs);
+    if stable == true
+        y0 = v_stb
     else
-        error("x0 should be length 4 or 6!")
-    end
-    n = length(x0_ptb_vec) ÷ nsv
-
-    # define base ODE problem for manifold branch
-    prob_branch = ODEProblem(rhs!, x0_ptb_vec[1:nsv], tf, (μ))
-
-    # define remake function
-    function prob_func(prob, i, repeat)
-        remake(prob, u0=x0_ptb_vec[1+(i-1)*nsv : i*nsv])
+        y0 = v_unstb
     end
 
-    # construct Ensemble Problem
-    ensemble_prob = EnsembleProblem(prob_branch, prob_func=prob_func)
-
-    # return output of EnsembleProblem
-    return solve(ensemble_prob, method, EnsembleThreads(), trajectories=n, callback=callback, method=method, reltol=reltol, abstol=abstol), x0_ptb_vec
-end
-
-
-# ----------------------------------------------------------------------------------- #
-# function for extracting poincare section
-struct Struct_out_PoincareSection
-    u::Matrix{Float64}
-    t::Vector{Float64}
-end
-
-
-"""
-    get_manifold_ps(sim_manifold)
-
-Get manifold poincare section
-"""
-function get_manifold_ps(sim_manifold::EnsembleSolution)
-    # initialize array of poincare section
-    t_ps = zeros(length(sim_manifold))
-    x_ps, y_ps   = zeros(length(sim_manifold)), zeros(length(sim_manifold))
-    vx_ps, vy_ps = zeros(length(sim_manifold)), zeros(length(sim_manifold))
-    if length(sim_manifold[1].u[1])==6
-        z_ps, vz_ps = zeros(length(sim_manifold)), zeros(length(sim_manifold))
+    # check epsilon, if not provided, check with lstar
+    if isnothing(ϵ) == true
+        ϵ = scale_ϵ(mu, state0, period, stable, monodromy, y0, lstar)
     end
-    # populate poincare section
-    for idx in 1:length(sim_manifold)
-        t_ps[idx] = sim_manifold[idx].t[end]
-        if length(sim_manifold[idx].u[1])==4
-            x_ps[idx]  = sim_manifold[idx].u[end][1]
-            y_ps[idx]  = sim_manifold[idx].u[end][2]
-            vx_ps[idx] = sim_manifold[idx].u[end][3]
-            vy_ps[idx] = sim_manifold[idx].u[end][4]
 
-        elseif length(sim_manifold[idx].u[1])==6
-            x_ps[idx]  = sim_manifold[idx].u[end][1]
-            y_ps[idx]  = sim_manifold[idx].u[end][2]
-            z_ps[idx]  = sim_manifold[idx].u[end][3]
-            vx_ps[idx] = sim_manifold[idx].u[end][4]
-            vy_ps[idx] = sim_manifold[idx].u[end][5]
-            vz_ps[idx] = sim_manifold[idx].u[end][6]
+    # create base ODE
+    prob_base = ODEProblem(R3BP.rhs_cr3bp_sv!, state0, (0, tf), [mu,],
+        method=Tsit5(), reltol=1e-12, abstol=1e-12#, callback=cb
+    )
+
+    sim = []
+    for i = 1:N
+        # translate eigenvalue
+        yi = R3BP.get_stm(sol_stm, 6, 12) * y0
+        if yi[1] > 0 && xdir == "positive"
+            ϵ_use = ϵ
+        elseif yi[1] > 0 && xdir == "negative"
+            ϵ_use = -ϵ
+        elseif yi[1] < 0 && xdir == "positive"
+            ϵ_use = -ϵ
+        elseif yi[1] < 0 && xdir == "negative"
+            ϵ_use = ϵ
         end
+        # translate state
+        x0i_ptrb = sol_stm.u[i][1:6] + ϵ_use * yi/norm(yi)
+        # propagate
+        prob_xi = remake(prob_base; u0=x0i_ptrb)
+        _sol = @suppress_err solve(prob_xi, callback=cb)
+        push!(sim, _sol)
     end
-    # concatenate into single array
-    if length(sim_manifold[1].u[1])==4
-        u = cat(x_ps, y_ps, vx_ps, vy_ps, dims=(2,2))
-    elseif length(sim_manifold[1].u[1])==6
-        u = cat(x_ps, y_ps, z_ps, vx_ps, vy_ps, vz_ps, dims=(2,2))
-    end
-    return Struct_out_PoincareSection(u, t_ps)
+    return sim
 end
+
+
+#
+# ## manifold functions
+#
+# # struct WarmManifold
+# #     x0_ptb_vec::Array{Float64,1}
+# #     n::Int
+# #     nsv::Int
+# #     μ::Float64
+# #     rhs!
+# # end
+#
+# """
+#     get_manifold(
+#             μ::Float64,
+#             x0::Array,
+#             period::Float64,
+#             tf::Float64,
+#             stable::Bool;
+#             kwargs...)
+#
+# Function to obtain manifold of LPO
+#
+# # Arguments
+#     - `μ::Float64`:: R3BP parameter
+#     - `x0::Array`: LPO state
+#     - `period::Float64`: LPO period
+#     - `tf::Float64`: time of flight of manifold
+#     - `stable::Bool`: true for stable manifold, false for unstable manifold
+#     - `xdir::String`: direction of manifold, "positive" or "negative" along x-axis
+#
+# # Returns
+#     `EnsembleSolution`: ODE solution of `n` discrete manifold branches
+#     `array`: x0_ptb_vec
+# """
+# function get_manifold(
+#         μ::Float64,
+#         x0::Array,
+#         period::Float64,
+#         tf::Float64,
+#         stable::Bool;
+#         kwargs...
+# )
+#     # ---------- extract arguments ---------- #
+#     kwargs_dict = Dict(kwargs)
+#     # main manifold options
+#     xdir     = assign_from_kwargs(kwargs_dict, :xdir, "positive")
+#     n        = assign_from_kwargs(kwargs_dict, :n, 50)
+#     callback = assign_from_kwargs(kwargs_dict, :callback, nothing)
+#     ϵ      = assign_from_kwargs(kwargs_dict, :ϵ, nothing)
+#     lstar    = assign_from_kwargs(kwargs_dict, :lstar, 1.0)
+#     relative_tol_manifold    = assign_from_kwargs(kwargs_dict, :relative_tol_manifold, 0.1)
+#     absolute_tol_manifold_km = assign_from_kwargs(kwargs_dict, :absolute_tol_manifold_km, 100.0)
+#     verbosity = assign_from_kwargs(kwargs_dict, :verbosity, 0)
+#     detailed_output = assign_from_kwargs(kwargs_dict, :detailed_output, false)
+#     ensemblealg = assign_from_kwargs(kwargs_dict, :ensemblealg, EnsembleThreads())
+#
+#     # ODE settings
+#     reltol = assign_from_kwargs(kwargs_dict, :reltol, 1.e-12)
+#     abstol = assign_from_kwargs(kwargs_dict, :abstol, 1.e-12)
+#     method = assign_from_kwargs(kwargs_dict, :method, Tsit5())
+#
+#     # warm-start options
+#     x0_ptb_vec = assign_from_kwargs(kwargs_dict, :wm, nothing)
+#
+#     __print_verbosity("========== Manifold Setting ==========", verbosity, 0)
+#     __print_verbosity("   xdir: $xdir\n   Stable: $stable", verbosity, 0)
+#
+#     # ---------- propagate c0 by one full period with STM ---------- #
+#     nsv = length(x0)
+#     if nsv==4
+#         rhs!     = rhs_pcr3bp_sv!
+#         rhs_stm! = rhs_pcr3bp_svstm!
+#     elseif nsv==6
+#         rhs!     = rhs_cr3bp_sv!
+#         rhs_stm! = rhs_cr3bp_svstm!
+#     else
+#         error("x0 should be length 4 or 6!")
+#     end
+#
+#     # if no WarmManifold is provided, compute parameters
+#     if isnothing(x0_ptb_vec) == true
+#
+#         # obtain STM history
+#         x0_stm = vcat(x0, reshape(I(nsv), (nsv^2,)))[:]
+#         prob_lpo = ODEProblem(rhs_stm!, x0_stm, period, (μ), method=method, reltol=reltol, abstol=abstol)
+#         sol = solve(prob_lpo, saveat=LinRange(0, period, n+1))
+#
+#         # get monodromy matrix
+#         monodromy = get_stm(sol, nsv)
+#
+#         # get eigenvectors at initial state
+#         y0 = get_eigenvector(monodromy, stable, verbosity)
+#
+#         # define ϵ (linear perturbation)
+#         if isnothing(ϵ)
+#             ϵ = scale_ϵ(μ, x0, period, stable, monodromy, y0, lstar, relative_tol_manifold, absolute_tol_manifold_km)
+#         end
+#         # decide sign of ϵ based on xdir
+#         if cmp(xdir, "positive")==0
+#             if y0[1] < 0.0
+#                 ϵ_corr = -abs(ϵ)
+#             else
+#                 ϵ_corr =  abs(ϵ)
+#             end
+#         elseif cmp(xdir, "negative")==0
+#             if y0[1] > 0.0
+#                 ϵ_corr = -abs(ϵ)
+#             else
+#                 ϵ_corr =  abs(ϵ)
+#             end
+#         else
+#             error("xdir should be \"positive\" or \"negative\"")
+#         end
+#         __print_verbosity("Using linear perturbation ϵ = $ϵ", verbosity, 0)
+#
+#         # ---------- construct and append initial condition ---------- #
+#         x0_ptb_vec = zeros(n*nsv)
+#         for i in 1:n
+#             # map eigenvector (y = stm*y0)
+#             y_transcribed = get_stm(sol, nsv, i) * y0
+#             # construct linearly perturbed state
+#             x0_ptb_vec[1+(i-1)*nsv : i*nsv] = sol.u[i][1:nsv] + ϵ_corr*y_transcribed/norm(y_transcribed)
+#         end
+#     else
+#         __print_verbosity("Warm-starting EnsembleProblem", verbosity, 0)
+#     end
+#
+#     # define base ODE problem for manifold branch
+#     prob_branch = ODEProblem(rhs!, x0_ptb_vec[1:nsv], tf, (μ))
+#
+#     # define remake function
+#     function prob_func(prob, i, repeat)
+#         remake(prob, u0=x0_ptb_vec[1+(i-1)*nsv : i*nsv])
+#     end
+#
+#     # construct Ensemble Problem
+#     ensemble_prob = EnsembleProblem(prob_branch, prob_func=prob_func)
+#
+#     # return output of EnsembleProblem and perturbed ic vector
+#     sim = solve(
+#         ensemble_prob, method, ensemblealg, trajectories=n,
+#         #callback=callback, method=method, reltol=reltol, abstol=abstol
+#     )
+#     if detailed_output == false
+#         return sim, x0_ptb_vec
+#     else
+#         return sim, monodromy
+#     end
+# end
+#
+#
+#
+# """
+#     get_manifold(
+#         x0_ptb_vec::Array{Float64,1},
+#         μ::Float64,
+#         nsv::Int,
+#         tf::Float64,
+#         kwargs...)
+#
+# Function to obtain manifold of LPO.
+# This dispatch utilizes pre-computed perturbation x's.
+#
+# # Arguments
+#     - `x0_ptb_vec::Array{Float64,1}`: array of branch-points x0's, length (num. of branches)*(state-vector length)
+#     - `μ::Float64`:: R3BP parameter
+#     - `nsv::Int`: number of elements in state-vector
+#     - `tf::Float64`: time of flight of manifold
+#
+# # Returns
+#     `EnsembleSolution`: ODE solution of `n` discrete manifold branches
+# """
+# function get_manifold(
+#     x0_ptb_vec::Array{Float64,1},
+#     μ::Float64,
+#     nsv::Int,
+#     tf::Float64,
+#     kwargs...
+# )
+#     # ---------- extract arguments ---------- #
+#     kwargs_dict = Dict(kwargs)
+#     # main manifold options
+#     callback = assign_from_kwargs(kwargs_dict, :callback, nothing)
+#     # ODE settings
+#     reltol = assign_from_kwargs(kwargs_dict, :reltol, 1.e-12)
+#     abstol = assign_from_kwargs(kwargs_dict, :abstol, 1.e-12)
+#     method = assign_from_kwargs(kwargs_dict, :method, Tsit5())
+#     verbosity = assign_from_kwargs(kwargs_dict, :verbosity, 0)
+#
+#     __print_verbosity("Warm-starting EnsembleProblem", verbosity, 0)
+#
+#     # get problem rhs function and dimension
+#     if nsv==4
+#         rhs!     = rhs_pcr3bp_sv!
+#         rhs_stm! = rhs_pcr3bp_svstm!
+#     elseif nsv==6
+#         rhs!     = rhs_cr3bp_sv!
+#         rhs_stm! = rhs_cr3bp_svstm!
+#     else
+#         error("x0 should be length 4 or 6!")
+#     end
+#     n = length(x0_ptb_vec) ÷ nsv
+#
+#     # define base ODE problem for manifold branch
+#     prob_branch = ODEProblem(rhs!, x0_ptb_vec[1:nsv], tf, (μ))
+#
+#     # define remake function
+#     function prob_func(prob, i, repeat)
+#         remake(prob, u0=x0_ptb_vec[1+(i-1)*nsv : i*nsv])
+#     end
+#
+#     # construct Ensemble Problem
+#     ensemble_prob = EnsembleProblem(prob_branch, prob_func=prob_func)
+#
+#     # return output of EnsembleProblem
+#     return solve(ensemble_prob, method, EnsembleThreads(),
+#         trajectories=n, callback=callback,
+#     ), x0_ptb_vec
+# end
+#
+#
+# # ----------------------------------------------------------------------------------- #
+# # function for extracting poincare section
+# struct Struct_out_PoincareSection
+#     u::Matrix{Float64}
+#     t::Vector{Float64}
+# end
+#
+#
+# """
+#     get_manifold_ps(sim_manifold)
+#
+# Get manifold poincare section
+# """
+# function get_manifold_ps(sim_manifold::EnsembleSolution)
+#     # initialize array of poincare section
+#     t_ps = zeros(length(sim_manifold))
+#     x_ps, y_ps   = zeros(length(sim_manifold)), zeros(length(sim_manifold))
+#     vx_ps, vy_ps = zeros(length(sim_manifold)), zeros(length(sim_manifold))
+#     if length(sim_manifold[1].u[1])==6
+#         z_ps, vz_ps = zeros(length(sim_manifold)), zeros(length(sim_manifold))
+#     end
+#     # populate poincare section
+#     for idx in 1:length(sim_manifold)
+#         t_ps[idx] = sim_manifold[idx].t[end]
+#         if length(sim_manifold[idx].u[1])==4
+#             x_ps[idx]  = sim_manifold[idx].u[end][1]
+#             y_ps[idx]  = sim_manifold[idx].u[end][2]
+#             vx_ps[idx] = sim_manifold[idx].u[end][3]
+#             vy_ps[idx] = sim_manifold[idx].u[end][4]
+#
+#         elseif length(sim_manifold[idx].u[1])==6
+#             x_ps[idx]  = sim_manifold[idx].u[end][1]
+#             y_ps[idx]  = sim_manifold[idx].u[end][2]
+#             z_ps[idx]  = sim_manifold[idx].u[end][3]
+#             vx_ps[idx] = sim_manifold[idx].u[end][4]
+#             vy_ps[idx] = sim_manifold[idx].u[end][5]
+#             vz_ps[idx] = sim_manifold[idx].u[end][6]
+#         end
+#     end
+#     # concatenate into single array
+#     if length(sim_manifold[1].u[1])==4
+#         u = cat(x_ps, y_ps, vx_ps, vy_ps, dims=(2,2))
+#     elseif length(sim_manifold[1].u[1])==6
+#         u = cat(x_ps, y_ps, z_ps, vx_ps, vy_ps, vz_ps, dims=(2,2))
+#     end
+#     return Struct_out_PoincareSection(u, t_ps)
+# end
