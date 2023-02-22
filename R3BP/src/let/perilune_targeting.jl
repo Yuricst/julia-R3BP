@@ -301,7 +301,7 @@ function lpo2llo_target(
 	# get states at LLO
 	states_llo = []
 	#pbar = Progress(length(perilunes_per_strip); showspeed=true)
-	if use_pbar
+	if use_pbar == true
 		pbar = ProgressUnknown("Perilune strip targeting: ", spinner=true)
 	end
 	for istrip = 1:length(perilunes_per_strip)
@@ -314,7 +314,7 @@ function lpo2llo_target(
 	    else
 	        states_llo = vcat(states_llo, _states_llo)
 	    end
-		if use_pbar
+		if use_pbar == true
 			ProgressMeter.next!(pbar, spinner="🌑🌒🌓🌔🌕🌖🌗🌘")
 		end
 	end
