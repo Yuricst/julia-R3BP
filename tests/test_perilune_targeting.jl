@@ -30,7 +30,7 @@ states_llo = R3BP.lpo2llo_target(mu, X0, T);
 # propagate found trajectories backward
 tf_fwd = -3.0
 prob_base = ODEProblem(R3BP.rhs_cr3bp_sv!, [1,0,0,0,1,0], (0, tf_fwd), [mu,],
-    method=Tsit5(), reltol=1e-12, abstol=1e-12, 
+    method=Tsit5(), reltol=1e-12, abstol=1e-12,
 )
 
 traj_llo_targeting = []
