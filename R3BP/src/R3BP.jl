@@ -13,6 +13,7 @@ using ProgressMeter
 using JSON
 using Dierckx
 using Suppressor: @suppress_err
+using Plots
 
 using AstrodynamicsBase
 #using Plots
@@ -44,6 +45,7 @@ include("ode/equationsOfMotionWithThrust.jl")
 
 # LET design
 include("let/perilune_targeting.jl")
+include("let/search_bcr4bp.jl")
 
 # miscellaneous
 include("misc_tools.jl")
