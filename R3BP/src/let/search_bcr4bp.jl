@@ -62,7 +62,7 @@ end
 """
 Zoom in on grid in terms of t0
 """
-function zoom_grid(params, x0, tof, cbs, n_init::Int=30, rp_threshold::Real=0.75, Δt0::Real=π/12)
+function zoom_grid(params, x0, tof, cbs, n_init::Int=40, rp_threshold::Real=0.75, Δt0::Real=π/12)
     t0s = LinRange(0, 2π, n_init+1)[1:n_init]
     
     # create base ODE
@@ -71,7 +71,6 @@ function zoom_grid(params, x0, tof, cbs, n_init::Int=30, rp_threshold::Real=0.75
         method=Tsit5(), reltol=1e-12, abstol=1e-12, save_everystep=false)
 
     perigees = Float64[]
-    sims = []
     for t0 in t0s
         # p[1] = μ, p[2] = μ_3, p[3] = t0, p[4] = a, p[5] = ω_s
         p_ode = (params.mu, params.μ_3, t0, params.a, params.ω_s)
@@ -92,9 +91,11 @@ function zoom_grid(params, x0, tof, cbs, n_init::Int=30, rp_threshold::Real=0.75
     end
     
     # research through regions of interest
+    println("t0_interest = ", length(t0_interest))
     _perigees = Float64[]
-    _t0s = zeros(2n_init)
-    for (idx,t0) in enumerate(t0_interest)
+    _t0s = zeros(length(t0_interest)*n_init)
+    for idx = 1:length(t0_interest)  # (idx,t0) in enumerate(t0_interest)
+        t0 = t0_interest[idx]
         _t0s_iter = LinRange(t0-Δt0, t0+Δt0, n_init+1)[1:n_init]
         _t0s[(idx-1)*n_init+1:idx*n_init] = _t0s_iter
         for t0 in _t0s_iter
@@ -129,7 +130,7 @@ function rootsolve_t0(params, prob_base, t0s, perigees, x0, tof, radius_target, 
         end
     end
     
-    # find places to iterate
+    # find places to iterate and run root-solving
     lets = Vector[]
     for idx = 1:length(perigees)-1
         if (perigees[idx+1] - radius_target)*(perigees[idx] - radius_target) < 0.0
@@ -190,6 +191,8 @@ function grid_search_let(
 
 	# plot
 	if full_return
+        println("length(t0_interest) = ", length(t0_interest))
+        println("length(_perigees) = ", length(_perigees))
 		pt0 = plot(frame_style=:box, size=(600,400), ylabel="Perigee, km",
 	    yscale=:log10, legend=:bottom)
 		plot!(pt0, t0_interest, _perigees*params.lstar, marker=:circle)
@@ -197,6 +200,9 @@ function grid_search_let(
 	end
 
 	# root-solve
+    if verbose
+        println("Running root-solver")
+    end
 	lets = rootsolve_t0(params, prob_base, t0_interest, _perigees, x0, tof, radius_target, cbs, tol, verbose);
 	if full_return
 		return lets, pt0, cbs
