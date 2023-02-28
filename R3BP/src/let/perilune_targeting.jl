@@ -36,6 +36,8 @@ function separate_top_bottom(xs, ys)
 			vcat(xs[flipped[1]+1:flipped[2]], ys[flipped[1]+1:flipped[2]])[:],
 			vcat(xs[flipped[3]+1:end], ys[flipped[3]+1:end])[:],
 		)
+	else
+		println("length(flipped) == ", length(flipped))
     end
     # order them
     side1 = side1[sortperm(side1[:,1]), :]
@@ -256,14 +258,16 @@ function lpo2llo_target(
 	i_strip    = 2,
 	n_interval = 30,
 	n_strip    = 50,
-	tf_fwd     = 5.0,
+	tf_fwd     = 15.0,
 	r2_threshold_min = 0.004518,
 	target_radius    = 0.005819,
 	N_manif::Int=50,
-	tf_manif::Real=-10.0,
+	tf_manif::Real=-20.0,
+	ϵ=1e-5,
 	manif_cb=nothing,
-	verbose::Bool=false,
-	use_pbar::Bool=true
+	verbose::Bool=true,
+	use_pbar::Bool=true,
+	get_plots::Bool=false,
 )
 	if isnothing(manif_cb)
 		r2_threshold = 1.0
@@ -280,7 +284,8 @@ function lpo2llo_target(
 	end
 	stability = true
 	direction = "positive"
-	sim = R3BP.get_manifold(mu, X0_lpo, period, tf_manif, stability, N_manif, direction, manif_cb);
+	sim = R3BP.get_manifold(mu, X0_lpo, period, tf_manif, stability, N_manif, direction,
+		manif_cb, ϵ, 384400.0, verbose);
 
 	# check that all manifolds met condition
 	if (sum([sol.retcode == :Terminated for sol in sim]) == length(sim)) == false
@@ -294,29 +299,45 @@ function lpo2llo_target(
 	end
 	ps = hcat([sol.u[end] for sol in sim]...)
 
-	# process PS
-	anchors, strips_list = R3BP.interpolate_ps(ps, i_strip, n_interval, n_strip);
-	strips_list, perilunes_per_strip = R3BP.get_strips(strips_list, mu, r2_threshold_min, tf_fwd);
-
-	# get states at LLO
-	states_llo = []
-	#pbar = Progress(length(perilunes_per_strip); showspeed=true)
-	if use_pbar == true
-		pbar = ProgressUnknown("Perilune strip targeting: ", spinner=true)
-	end
-	for istrip = 1:length(perilunes_per_strip)
-	    _states_llo = R3BP.interpolate_strip(
-	        mu, anchors, strips_list[istrip], perilunes_per_strip[istrip], target_radius,
-	        i_strip, r2_threshold_min, tf_fwd, verbose
-	    );
-	    if length(states_llo) == 0
-	        states_llo = _states_llo
-	    else
-	        states_llo = vcat(states_llo, _states_llo)
-	    end
-		if use_pbar == true
-			ProgressMeter.next!(pbar, spinner="🌑🌒🌓🌔🌕🌖🌗🌘")
+	plots_list = []
+	if get_plots     # plot of poincare section
+		plot_list = []
+		for i = 1:6
+		    index = LinRange(1,size(ps,2),size(ps,2))
+		    push!(plot_list, scatter(ps[i_strip, :], ps[i, :], zcolor=index))
 		end
+		push!(plots_list, plot(plot_list...; frame_style=:box, layout=(2,3), size=(700,500)))
 	end
-	return states_llo
+
+
+	try
+		# process PS
+		anchors, strips_list = R3BP.interpolate_ps(ps, i_strip, n_interval, n_strip);
+		strips_list, perilunes_per_strip = R3BP.get_strips(strips_list, mu, r2_threshold_min, tf_fwd);
+		# get states at LLO
+		states_llo = []
+		#pbar = Progress(length(perilunes_per_strip); showspeed=true)
+		if use_pbar == true
+			pbar = ProgressUnknown("Perilune strip targeting: ", spinner=true)
+		end
+		for istrip = 1:length(perilunes_per_strip)
+		    _states_llo = R3BP.interpolate_strip(
+		        mu, anchors, strips_list[istrip], perilunes_per_strip[istrip], target_radius,
+		        i_strip, r2_threshold_min, tf_fwd, verbose
+		    );
+		    if length(states_llo) == 0
+		        states_llo = _states_llo
+		    else
+		        states_llo = vcat(states_llo, _states_llo)
+		    end
+			if use_pbar == true
+				ProgressMeter.next!(pbar, spinner="🌑🌒🌓🌔🌕🌖🌗🌘")
+			end
+		end
+		return states_llo, plots_list
+
+
+	catch
+		return [], plots_list
+	end
 end
