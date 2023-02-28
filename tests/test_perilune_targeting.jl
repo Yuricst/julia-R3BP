@@ -25,11 +25,16 @@ X0 = [1.176924090973164, 0.0, -0.060210863312217, 0.0, -0.173836346247689, 0.0];
 T = 3.385326412831325;
 
 # compact generator function
-states_llo = R3BP.lpo2llo_target(mu, X0, T);
+i_strip    = 2
+n_interval = 30
+n_strip    = 50
+tf_fwd     = 15.0
+states_llo = R3BP.lpo2llo_target(
+    mu, X0, T, i_strip, n_interval, n_strip, tf_fwd);
 
 # propagate found trajectories backward
-tf_fwd = -3.0
-prob_base = ODEProblem(R3BP.rhs_cr3bp_sv!, [1,0,0,0,1,0], (0, tf_fwd), [mu,],
+tf_bck = -3.0
+prob_base = ODEProblem(R3BP.rhs_cr3bp_sv!, [1,0,0,0,1,0], (0, tf_bck), [mu,],
     method=Tsit5(), reltol=1e-12, abstol=1e-12,
 )
 
