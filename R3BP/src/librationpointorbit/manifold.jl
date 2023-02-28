@@ -11,6 +11,7 @@ Function associated with manifold
 Extract STM from solution of ODEProblem at final index
 """
 function get_stm(sol, nsv::Int)
+    #return reshape(sol.u[end][nsv+1:end], (nsv, nsv))
     return transpose( reshape(sol.u[end][nsv+1:end], (nsv, nsv)) )
 end
 
@@ -21,6 +22,7 @@ end
 Extract STM from solution of ODEProblem at index=idx
 """
 function get_stm(sol, nsv::Int, idx::Int)
+    #return reshape(sol.u[idx][nsv+1:end], (nsv, nsv))
     return transpose( reshape(sol.u[idx][nsv+1:end], (nsv, nsv)) )
 end
 
@@ -181,6 +183,7 @@ Construct manifolds
 function get_manifold(
     mu::Real, state0, period, tf, stable::Bool=true, N::Int=50,
     xdir::String="positive", cb=nothing, ϵ=nothing, lstar::Real=384400.0,
+    verbose::Bool=false
 )
     #@assert (tf<0 && stable==true) || (tf>0 && stable=false) "check sign of tf!"
     state0_stm = vcat(state0, reshape(I(6), (6^2,)))[:]
@@ -189,7 +192,8 @@ function get_manifold(
         vcat(state0, reshape(I(6), (6^2,)))[:],
         [0, period],
         [mu,],
-        method=Tsit5(), reltol=1e-12, abstol=1e-12, saveat=LinRange(0, period, N+1)
+        method=Tsit5(), reltol=1e-12, abstol=1e-12,
+        saveat=LinRange(0, period, N+1),
     )
     sol_stm  = solve(prob_stm);
 
@@ -206,6 +210,12 @@ function get_manifold(
     if isnothing(ϵ) == true
         ϵ = scale_ϵ(mu, state0, period, stable, monodromy, y0, lstar)
     end
+    if verbose
+        println("MANIFOLD ϵ = $ϵ")
+        println("MANIFOLD monodromy = $monodromy")
+        println("MANIFOLD v_unstb = $v_unstb")
+        println("MANIFOLD v_stb   = $v_stb")
+    end
 
     # create base ODE
     prob_base = ODEProblem(R3BP.rhs_cr3bp_sv!, state0, (0, tf), [mu,],
@@ -215,7 +225,7 @@ function get_manifold(
     sim = []
     for i = 1:N
         # translate eigenvalue
-        yi = R3BP.get_stm(sol_stm, 6, 12) * y0
+        yi = R3BP.get_stm(sol_stm, 6, i) * y0    # extract STM at index i
         if yi[1] > 0 && xdir == "positive"
             ϵ_use = ϵ
         elseif yi[1] > 0 && xdir == "negative"
