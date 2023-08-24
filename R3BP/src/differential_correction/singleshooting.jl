@@ -124,25 +124,21 @@ function ssdc_periodic_xzplane(p, x0::Vector, period0::Real; kwargs...)
     #if cmp(stm_option, "ad")==0
     if cmp(system, "cr3bp")==0
         if cmp(stm_option, "ad")==0
-            prob_base = ODEProblem(
-                R3BP.rhs_cr3bp_sv!, x0iter, period/2, p,
+            prob_base = ODEProblem(R3BP.rhs_cr3bp_sv!, x0iter, period/2, p,
                 reltol=reltol, abstol=abstol
             );
         else
-            prob_base = ODEProblem(
-                R3BP.rhs_cr3bp_svstm!, x0iter, period/2, p,
+            prob_base = ODEProblem(R3BP.rhs_cr3bp_svstm!, x0iter, period/2, p,
                 reltol=reltol, abstol=abstol
             );
         end
     elseif cmp(system, "er3bp")==0
         if cmp(stm_option, "ad")==0
-            prob_base = ODEProblem(
-                R3BP.rhs_er3bp_sv!, x0iter, period/2, p,
+            prob_base = ODEProblem(R3BP.rhs_er3bp_sv!, x0iter, period/2, p,
                 reltol=reltol, abstol=abstol
             );
         else
-            prob_base = ODEProblem(
-                R3BP.rhs_er3bp_svstm!, x0iter, period/2, p,
+            prob_base = ODEProblem(R3BP.rhs_er3bp_svstm!, x0iter, period/2, p,
                 reltol=reltol, abstol=abstol
             );
         end

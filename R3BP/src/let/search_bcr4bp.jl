@@ -62,7 +62,9 @@ end
 """
 Zoom in on grid in terms of t0
 """
-function zoom_grid(params, x0, tof, cbs, n_init::Int=40, rp_threshold::Real=0.75, Δt0::Real=π/12)
+function zoom_grid(params, x0, tof, cbs, n_init::Int=40,
+    rp_threshold::Real=0.75, Δt0::Real=π/12
+)
     t0s = LinRange(0, 2π, n_init+1)[1:n_init]
     
     # create base ODE
@@ -163,6 +165,8 @@ Grid-search LET from perilune state via grid-search and bisection method in BCR4
 - `n::Int`: number of points on grid of t0
 - `verbose::Bool`: flag on printing info
 - `full_return::Bool`: whether to return all information
+- `rp_threshold::Real`: threshold for perigee radius, in canonical distance
+- `Δt0::Float64`: zooming window for t0, in radians
 
 # Returns
 - List of LET info, consisting of [perigee, t0, tof] for input x0
