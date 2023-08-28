@@ -48,12 +48,12 @@ function stability(μ::Float64, x0::Vector, period::Float64; kwargs...)
     elseif length(x0)==6
         #x0_stm = vcat(x0, [1 0 0 0 0 0  0 1 0 0 0 0  0 0 1 0 0 0  0 0 0 1 0 0  0 0 0 0 1 0  0 0 0 0 0 1]);
         x0_stm = vcat(x0, reshape(I(6), (36,)))[:]
-        prob_lpo = ODEProblem(rhs_cr3bp_svstm!, x0_stm, period, (μ),
-            method=method, reltol=reltol, abstol=abstol);
+        prob_lpo = ODEProblem(rhs_cr3bp_svstm!, x0_stm, period, (μ),)
+            #method=method, reltol=reltol, abstol=abstol);
     else
         error("x0 should be length 4 or 6")
     end
-    sol = solve(prob_lpo)
+    sol = solve(prob_lpo, method, reltol=reltol, abstol=abstol)
     # get monodromy matrix (careful of order from reshape function!)
     monodromy = reshape(sol.u[end][length(x0)+1:end], (length(x0),length(x0)))';
     # call stability function with dispatch for monodromy
