@@ -6,6 +6,7 @@ struct CR3BP_param
     mu::Float64
     lstar::Float64
     tstar::Float64
+    vstar::Float64
     mstar::Float64
     m2_soi::Float64
 end
@@ -69,9 +70,10 @@ function get_cr3bp_param(m1_naifID::String, m2_naifID::String)
     mu     = m2_gm / (m1_gm + m2_gm)
     lstar  = a2
     tstar  = sqrt( ( a2 )^3 / ( m1_gm + m2_gm ) )
+    vstar = lstar/tstar
     mstar  = m1_gm + m2_gm
     m2_soi = a2 * (m2_gm/m1_gm)^(2/5)
-    return CR3BP_param(mu, lstar, tstar, mstar, m2_soi)
+    return CR3BP_param(mu, lstar, tstar, vstar, mstar, m2_soi)
 end
 
 
@@ -80,6 +82,7 @@ struct BCR4BP_param
     mu::Float64
     lstar::Float64
     tstar::Float64
+    vstar::Float64
     mstar::Float64
     m2_soi::Float64
     μ_3::Float64
@@ -145,7 +148,7 @@ function get_bcr4bp_param(m1_naifID::String, m2_naifID::String)
     μ_3   = gm_sun   / CR3BP_param.mstar
 
     # return structure
-    return BCR4BP_param(CR3BP_param.mu, CR3BP_param.lstar, CR3BP_param.tstar,
+    return BCR4BP_param(CR3BP_param.mu, CR3BP_param.lstar, CR3BP_param.tstar, CR3BP_param.vstar,
     CR3BP_param.mstar, CR3BP_param.m2_soi, μ_3, a_sun, ω_s, tsyn)
 end
 
