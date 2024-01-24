@@ -387,7 +387,7 @@ BCR4BP equation of motion
     - `p`: parameters, where p[1] = μ, p[2] = μ_3, p[3] = t0, p[4] = a, p[5] = ω_s
     - `t`: time
 """
-function rhs_bcr4bp_sv!(du,u,p,t)
+function rhs_bcr4bp_svstm!(du,u,p,t)
     # unpack arguments
     mu, μ_3, t0, a_s, ω_s = p
     # decompose state
@@ -412,4 +412,87 @@ function rhs_bcr4bp_sv!(du,u,p,t)
     du[4] =  2*vy + x - ((1-mu)/r1^3)*(mu+x) + (mu/r2^3)*(1-mu-x) + ( -(μ_3/r3^3)*(x-xs) - (μ_3/a_s^3)*xs )
     du[5] = -2*vx + y - ((1-mu)/r1^3)*y      - (mu/r2^3)*y        + ( -(μ_3/r3^3)*(y-ys) - (μ_3/a_s^3)*ys )
     du[6] =           - ((1-mu)/r1^3)*z      - (mu/r2^3)*z        + ( -(μ_3/r3^3)*(z)    - (μ_3/a_s^3)*zs )
+end
+
+
+
+"""
+    rhs_bcr4bp_svstm!(du,u,p,t)
+
+BCR4BP equation of motion
+
+# Arguments
+    - `du`: cache array of duative of state-vector
+    - `u`: state-vector
+    - `p`: parameters, where p[1] = μ, p[2] = μ_3, p[3] = t0, p[4] = a, p[5] = ω_s
+    - `t`: time
+"""
+function rhs_bcr4bp_svstm!(du,u,p,t)
+    # unpack arguments
+    mu, μ_3, t0, a_s, ω_s = p
+    # decompose state
+    x, y, z, vx, vy, vz = u[1:6]
+    stm = reshape(u[7:end], (6,6))';   # note Julia is column-major
+
+    # calculate radii
+    r1 = sqrt( (x+mu)^2 + y^2 + z^2 )
+    r2 = sqrt( (x-1+mu)^2 + y^2 + z^2 )
+
+    # sun position
+    xs = a_s*cos(ω_s*t + t0)
+    ys = a_s*sin(ω_s*t + t0)
+    zs = 0.0
+    r3 = sqrt( (x-xs)^2 + (y-ys)^2 + (z-zs)^2 )
+
+    # position-state derivative
+    du[1] = vx
+    du[2] = vy
+    du[3] = vz
+
+    # velocity derivatives
+    du[4] =  2*vy + x - ((1-mu)/r1^3)*(mu+x) + (mu/r2^3)*(1-mu-x) + ( -(μ_3/r3^3)*(x-xs) - (μ_3/a_s^3)*xs )
+    du[5] = -2*vx + y - ((1-mu)/r1^3)*y      - (mu/r2^3)*y        + ( -(μ_3/r3^3)*(y-ys) - (μ_3/a_s^3)*ys )
+    du[6] =           - ((1-mu)/r1^3)*z      - (mu/r2^3)*z        + ( -(μ_3/r3^3)*(z)    - (μ_3/a_s^3)*zs )
+
+    # initialize A-matrix
+    A11 = zeros(3,3);
+    A12 = I(3);
+    A22 = 2*[0  1 0;
+             -1 0 0;
+             0  0 0];
+
+    # Construct U matrix (double-deriv of potential) in CR3BP
+    Uxx_C = 1 - (1-mu)/r1^3 - mu/r2^3 + 3*((x+mu)^2 *(1-mu)/r1^5 + (x+mu-1)^2*mu/r2^5)
+    Uyy_C = 1 - (1-mu)/r1^3 - mu/r2^3 + 3*y^2*((1-mu)/r1^5 + mu/r2^5)
+    Uzz_C =   - (1-mu)/r1^3 - mu/r2^3 + 3*z^2*((1-mu)/r1^5 + mu/r2^5)
+    Uxy_C =                               3*y*((x+mu)*(1-mu)/r1^5 + (x+mu-1)*mu/r2^5)
+    Uxz_C =                               3*z*((x+mu)*(1-mu)/r1^5 + (x+mu-1)*mu/r2^5)
+    Uyz_C =                               3*y*z*((1-mu)/r1^5 + mu/r2^5)
+
+    # construct U matrix from BCR4BP terms
+    Ups_xx = 3*(μ_3/r3^5)*(x-xs)^2 - μ_3/r3^3
+    Ups_yy = 3*(μ_3/r3^5)*(y-ys)^2 - μ_3/r3^3
+    Ups_zz = 3*(μ_3/r3^5)*(z-zs)^2 - μ_3/r3^3
+    Ups_xy = 3*(μ_3/r3^5)*(y-ys)*(x-xs)
+    Ups_xz = 3*(μ_3/r3^5)*(z-zs)*(x-xs)
+    Ups_yz = 3*(μ_3/r3^5)*(z-zs)*(y-ys)
+    
+    # combine U
+    Uxx = Uxx_C + Ups_xx
+    Uyy = Uyy_C + Ups_yy
+    Uzz = Uzz_C + Ups_zz
+    Uxy = Uxy_C + Ups_xy
+    Uxz = Uxz_C + Ups_xz
+    Uyz = Uyz_C + Ups_yz
+    Uderiv = [Uxx Uxy Uxz;
+              Uxy Uyy Uyz;
+              Uxz Uyz Uzz];
+
+    # update A-matrix
+    A = [A11    A12;
+         Uderiv A22];
+    # differential relation
+    stmdot = A * stm;
+    # store elements of A in du(7,1) ~ onwards
+    du[7:end] = reshape(stmdot', (36,))
 end
