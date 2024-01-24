@@ -387,7 +387,7 @@ BCR4BP equation of motion
     - `p`: parameters, where p[1] = μ, p[2] = μ_3, p[3] = t0, p[4] = a, p[5] = ω_s
     - `t`: time
 """
-function rhs_bcr4bp_svstm!(du,u,p,t)
+function rhs_bcr4bp_sv!(du,u,p,t)
     # unpack arguments
     mu, μ_3, t0, a_s, ω_s = p
     # decompose state
